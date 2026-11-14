@@ -41,3 +41,6 @@ deploy/tenant.env
 
 # app-builder build state (environment-specific)
 dataverse/app-builder/.maker-workspace/
+
+# tenant-specific agent values written by deploy/agent.mjs
+agent/env/.env.*.local

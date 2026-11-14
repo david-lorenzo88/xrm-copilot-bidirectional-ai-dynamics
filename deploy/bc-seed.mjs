@@ -311,7 +311,13 @@ function explain(err, context) {
 // ------------------------------------------------------------------ main
 let companyRoot = `${API_ROOT}/companies(<company-id>)`;
 const mostCommon = (xs) => [...xs.filter(Boolean).reduce((m, x) => m.set(x, (m.get(x) ?? 0) + 1), new Map())].sort((a, b) => b[1] - a[1])[0]?.[0];
-let demoPaymentTerms; // { id, code } applied to this script's customers (and to drafts created before it was set)
+let demoPaymentTerms;
+let dayTerms = [];
+/** The term matching the invoice's due period, else the next longer one, else the longest. */
+const termFor = (p) => {
+  const n = daysBetween(p.invoiceDate, p.dueDate);
+  return dayTerms.find((t) => t.days === n) ?? dayTerms.find((t) => t.days > n) ?? dayTerms.at(-1);
+}; // { id, code } applied to this script's customers (and to drafts created before it was set)
 const stats = { customersCreated: 0, customersSkipped: 0, invoicesCreated: 0, invoicesResumed: 0, invoicesPosted: 0, invoicesSkipped: 0, paymentsCreated: 0, paymentsSkipped: 0, journalPosts: 0 };
 
 try {
@@ -409,7 +415,11 @@ async function main() {
           inv = undefined;
         }
         if (!inv) {
-          inv = await post("salesInvoices", { customerId, invoiceDate: p.invoiceDate, postingDate: p.invoiceDate, dueDate: p.dueDate, externalDocumentNumber: p.ext });
+          const term = termFor(p);
+          inv = await post("salesInvoices", {
+            customerId, invoiceDate: p.invoiceDate, postingDate: p.invoiceDate, dueDate: p.dueDate, externalDocumentNumber: p.ext,
+            ...(term ? { paymentTermsId: term.id } : {}),
+          });
           stats.invoicesCreated++;
         }
         if (!lines.length) {
@@ -557,6 +567,12 @@ async function ensurePostingGroups() {
   // Payment terms are required for posting too. The fixtures set each invoice's due date, so the code
   // only has to exist: use --payment-terms, else a plain net-30 term (30D, single settlement).
   const terms = await listAll("paymentTerms?$select=id,code,dueDateCalculation");
+  // Single-settlement day-based terms (e.g. "30D"), used per invoice so its due date stays within the
+  // term's "Max. No. of Days till Due Date" (ES); multi-instalment terms ("2X45 DAYS") would split it.
+  dayTerms = terms
+    .filter((t) => /^\d+D$/.test(t.dueDateCalculation) && !/X/i.test(t.code))
+    .map((t) => ({ ...t, days: Number(t.dueDateCalculation.slice(0, -1)) }))
+    .sort((a, b) => a.days - b.days);
   demoPaymentTerms = opt("--payment-terms")
     ? terms.find((t) => t.code === opt("--payment-terms"))
     : terms.find((t) => t.dueDateCalculation === "30D" && !/X/i.test(t.code)) ?? terms[0];

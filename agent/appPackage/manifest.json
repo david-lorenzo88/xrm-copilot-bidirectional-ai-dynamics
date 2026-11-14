@@ -4,10 +4,10 @@
   "version": "1.0.0",
   "id": "${{TEAMS_APP_ID}}",
   "developer": {
-    "name": "Contoso",
-    "websiteUrl": "https://www.contoso.com",
-    "privacyUrl": "https://www.contoso.com/privacy",
-    "termsOfUseUrl": "https://www.contoso.com/terms"
+    "name": "Power Platform Ninja",
+    "websiteUrl": "https://powerplatformninja.com",
+    "privacyUrl": "https://powerplatformninja.com",
+    "termsOfUseUrl": "https://powerplatformninja.com"
   },
   "icons": {
     "color": "color.png",
@@ -15,7 +15,7 @@
   },
   "name": {
     "short": "Collections${{APP_NAME_SUFFIX}}",
-    "full": "Contoso Collections agent"
+    "full": "Collections agent"
   },
   "description": {
     "short": "Collections specialist for the Collections Workspace app.",
@@ -23,7 +23,10 @@
   },
   "accentColor": "#0F6CBD",
   "composeExtensions": [],
-  "permissions": ["identity", "messageTeamMembers"],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
   "copilotAgents": {
     "declarativeAgents": [
       {
