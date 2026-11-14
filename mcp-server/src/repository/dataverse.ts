@@ -73,7 +73,7 @@ export class DataverseRepository implements CollectionsRepository {
   private async attachClosedDates(invoices: Invoice[], customerNos?: readonly string[], since?: string): Promise<Invoice[]> {
     if (!this.ledgerAvailable) return invoices;
     const c = CLE.columns;
-    const filters = [`${c.open} eq false`];
+    const filters = [`${c.open} eq false`, ...(customerNos?.length ? [] : this.scope(c.customerNumber))];
     if (customerNos?.length) filters.push(`(${customerNos.map((n) => `${c.customerNumber} eq ${odataString(n)}`).join(" or ")})`);
     if (since) filters.push(`${c.dueDate} ge ${since}`);
     try {

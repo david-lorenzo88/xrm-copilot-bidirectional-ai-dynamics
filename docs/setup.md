@@ -62,7 +62,7 @@ resource group tagged `project=xrm-copilot-collections`, and the app registratio
 3. In Dataverse, open **Available Virtual Tables** (`dyn365bc_businesscentralentity`) and make visible:
    - `customer v2.0` → `dyn365bc_customer_v2_0`
    - `salesInvoice v2.0` → `dyn365bc_salesinvoice_v2_0` (and lines, if you want them)
-   - optional: the custom ledger API from `/bc` → expected `dyn365bc_customerledgerentry_v1_0`
+   - the custom ledger API from `/bc` (`deploy/bc-extension.sh` installs it) → `dyn365bc_customerledgerentry_ppn_collections_v1_0`
 4. **VERIFY** the logical **column** names in *Tables → Columns* and fix `packages/collections-domain/src/schema.ts` if they differ (it's the only place they appear). Also check the entity set names (`/api/data/v9.2/EntityDefinitions(LogicalName='dyn365bc_customer_v2_0')?$select=EntitySetName`).
 5. Seed data: `npm run fixtures:export` writes ~25 customers and ~300 invoices (`packages/collections-domain/out/fixtures`). The patterns: Fabrikam is the hero (worsening, one €48,500 invoice 100 days overdue), Northwind Traders pays late chronically, Tailspin Toys is improving. Post them in the sandbox (configuration package or the BC API), then shift the dates so they line up with the demo day.
 6. Check: the *Overdue invoices* view in Dataverse shows live BC rows.

@@ -1,10 +1,10 @@
 /// Read-only API over Customer Ledger Entries. The standard API v2.0 has no
 /// endpoint with "Closed at Date", which payment-behaviour analysis needs.
 /// Enable it in Dataverse as a BC virtual table (expected: dyn365bc_customerledgerentry_v1_0).
-page 50100 "Contoso Cust. Ledger Entry API"
+page 50100 "PPN Cust. Ledger Entry API"
 {
     PageType = API;
-    APIPublisher = 'contoso';
+    APIPublisher = 'ppn';
     APIGroup = 'collections';
     APIVersion = 'v1.0';
     EntityName = 'customerLedgerEntry';

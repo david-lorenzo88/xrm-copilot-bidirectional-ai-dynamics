@@ -27,7 +27,7 @@ add them to this solution. They belong to the Business Central Virtual Table sol
 |---|---|
 | `dyn365bc_customer_v2_0` | Customer form (hosts the PCF), context, risk |
 | `dyn365bc_salesinvoice_v2_0` | Overdue invoices view, side panes, aging |
-| `dyn365bc_customerledgerentry_v1_0` (custom API page, see `/bc`) | Paid dates for payment behavior |
+| `dyn365bc_customerledgerentry_ppn_collections_v1_0` (custom API page, see `/bc`) | Paid dates for payment behavior |
 
 The logical/column names the code uses are in one place: `packages/collections-domain/src/schema.ts`.
 

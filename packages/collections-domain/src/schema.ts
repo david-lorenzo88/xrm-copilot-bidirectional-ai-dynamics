@@ -43,15 +43,15 @@ export const BC_TABLES = {
   },
   /**
    * Payment history. The standard BC API v2.0 has no customer ledger entries
-   * endpoint, so this points at the custom API page in /bc (publisher "contoso",
-   * group "collections", entity "customerLedgerEntry", version v1.0).
-   * VERIFY: the virtual table name the BC catalog generates for a custom API page.
+   * endpoint, so this points at the custom API page in /bc (API publisher "ppn",
+   * group "collections", entity "customerLedgerEntry", version v1.0). The BC catalog
+   * names custom APIs <entity>_<publisher>_<group>_<version> (verified in the demo tenant).
    */
   customerLedgerEntry: {
-    logicalName: "dyn365bc_customerledgerentry_v1_0",
-    entitySet: "dyn365bc_customerledgerentry_v1_0s",
+    logicalName: "dyn365bc_customerledgerentry_ppn_collections_v1_0",
+    entitySet: "dyn365bc_customerledgerentries_ppn_collections_v1_0",
     columns: {
-      id: "dyn365bc_customerledgerentry_v1_0id",
+      id: "dyn365bc_customerledgerentry_ppn_collections_v1_0id",
       documentNo: "dyn365bc_documentnumber",
       customerNumber: "dyn365bc_customernumber",
       dueDate: "dyn365bc_duedate",

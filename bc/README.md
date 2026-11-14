@@ -1,16 +1,15 @@
 # Business Central extension (optional)
 
-`CollectionsLedgerApi` adds one read-only API page, `contoso/collections/v1.0/customerLedgerEntries`,
+`CollectionsLedgerApi` adds one read-only API page, `ppn/collections/v1.0/customerLedgerEntries`,
 because the standard API v2.0 has no customer ledger endpoint with **Closed at Date**. Payment-behaviour
 analysis needs that date to know when an invoice was actually paid.
 
-- Not compiled in this repository (no AL toolchain here). Open the folder in VS Code with the AL
-  Language extension, download symbols from your sandbox, and publish.
-- After publishing, enable the API as a virtual table in Dataverse (Business Central Virtual Table
-  catalog). **VERIFY** the generated logical name. The code expects `dyn365bc_customerledgerentry_v1_0`
-  with columns `dyn365bc_documentnumber`, `dyn365bc_closedatdate`, `dyn365bc_open`,
-  `dyn365bc_customernumber`, `dyn365bc_duedate`. Change `packages/collections-domain/src/schema.ts`
-  if yours differ.
+- Build and install: `bash deploy/bc-extension.sh` (AL CLI from NuGet, symbols from Microsoft's public
+  symbol feeds, install as a per-tenant extension through the automation API, then the Dataverse virtual
+  table). Targets BC 29 (runtime 16.0). Bump `version` in `app.json` before re-publishing.
+- Installed in the demo tenant as *Collections Ledger API* 1.0.0.0 by Power Platform Ninja. The BC catalog
+  names custom APIs `<entity>_<publisher>_<group>_<version>`, so the virtual table is
+  `dyn365bc_customerledgerentry_ppn_collections_v1_0` (entity set `dyn365bc_customerledgerentries_ppn_collections_v1_0`).
 - Without it, the MCP server still works: it logs a warning and analyses open invoices only.
 
 Seed data: `npm run fixtures:export` writes the demo customers/invoices (`packages/collections-domain/out/fixtures/*.json`, git-ignored) with
