@@ -161,6 +161,12 @@ flowchart LR
 29. Added a demo date (`DEMO_AS_OF`) for rehearsals: with 2026-11-27 the live tenant shows the session-day story
     (Fabrikam 39.7 days late on average and worsening; EUR 48,500 at 100 days, 90+, call today). PCF 1.0.2.
 
+### 12. Deck v3
+30. Rebuilt the deck with what the live build taught us: a *How we built it* timeline, *Sharp edges: BC virtual
+    tables* and *Sharp edges: building it for real*, and verified facts on the architecture, ERP, GA/preview,
+    licensing and checklist slides (31 slides, Open XML SDK validation clean). The recap slides keep the mock-host
+    screenshots until the end-to-end run in the tenant.
+
 ## Still open
 
 - End-to-end run of the three beats in the real app and Copilot pane; real screenshots for the deck.
