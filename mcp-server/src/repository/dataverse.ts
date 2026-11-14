@@ -14,7 +14,7 @@ const date = (row: Row, col: string) => str(row, col).slice(0, 10);
 /**
  * BC virtual tables + local tables over the Dataverse Web API, as the signed-in
  * user (OBO), so Dataverse security roles apply. Read-only towards BC: the only
- * writes go to contoso_collectiondashboard.
+ * writes go to ppn_collectiondashboard.
  */
 export class DataverseRepository implements CollectionsRepository {
   readonly mode = "dataverse" as const;

@@ -37,7 +37,7 @@ export type DashboardFilters = z.infer<typeof DashboardFilters>;
 
 /**
  * The shared state between the agent, the widget and the app.
- * Stored as JSON in `contoso_collectiondashboard`. Last write wins on `version`.
+ * Stored as JSON in `ppn_collectiondashboard`. Last write wins on `version`.
  */
 export const DashboardSpec = z
   .object({

@@ -3,7 +3,7 @@
 param([Parameter(Mandatory)][ValidateSet("clone", "init", "sync", "build", "import", "push")][string]$Command)
 $ErrorActionPreference = "Stop"
 $Solution = if ($env:SOLUTION) { $env:SOLUTION } else { "ContosoCollections" }
-$Prefix = if ($env:PUBLISHER_PREFIX) { $env:PUBLISHER_PREFIX } else { "contoso" }
+$Prefix = if ($env:PUBLISHER_PREFIX) { $env:PUBLISHER_PREFIX } else { "ppn" }
 $SolDir = "dataverse/solution/$Solution"
 $PcfDir = "pcf/CollectionsBridge"
 
@@ -16,7 +16,7 @@ switch ($Command) {
   "init" {
     New-Item -ItemType Directory -Force $SolDir | Out-Null
     Push-Location $SolDir
-    pac solution init --publisher-name Contoso --publisher-prefix $Prefix
+    pac solution init --publisher-name PowerPlatformNinja --publisher-prefix $Prefix
     pac solution add-reference --path "../../../$PcfDir"
     Pop-Location
   }

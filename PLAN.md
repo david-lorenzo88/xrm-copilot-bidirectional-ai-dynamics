@@ -75,8 +75,8 @@ Known gaps to design around. Each one also goes on a "sharp edges" slide:
 /agent                       M365 Agents Toolkit project: declarative agent manifest, instructions,
                              MCP plugin manifest, conversation starters, icons.
 /dataverse/solution          Unmanaged solution: model-driven app, sitemap, forms, views, PCF registration,
-                             local table `contoso_collectiondashboard` (dashboard spec JSON),
-                             `contoso_collectionaction` (audit of agent-initiated actions), security role.
+                             local table `ppn_collectiondashboard` (dashboard spec JSON),
+                             `ppn_collectionaction` (audit of agent-initiated actions), security role.
 /bc                          (Optional) BC AL extension: custom API page for Customer Ledger Entries if the
                              standard virtual-table catalog lacks what we need; seed data script.
 /mock                        Mock Xrm.Copilot shim + fixture data, for local dev and as the offline demo fallback.
@@ -101,7 +101,7 @@ A versioned action/context contract in `packages/collections-ui/contract.ts`. PC
 | `MS.PA.CopilotChat.OpenRecord` (built-in) | `entity, recordId` | Default: open record |
 | `Contoso.Collections.OpenInvoices` | `invoiceIds[]` | Open each critical invoice in its own side pane (`Xrm.App.sidePanes.createPane`) |
 | `Contoso.Collections.ShowWorklist` | `fetchXml, title` | Navigate to the Overdue view with the prioritized filter (wraps `NavigateToView`, with a custom title/ordering) |
-| `Contoso.Collections.RenderDashboard` | `dashboardId` or inline `spec` | Persist the spec to `contoso_collectiondashboard`, then render `<AgingDashboard spec>` in-app |
+| `Contoso.Collections.RenderDashboard` | `dashboardId` or inline `spec` | Persist the spec to `ppn_collectiondashboard`, then render `<AgingDashboard spec>` in-app |
 | `Contoso.Collections.LogFollowUp` | `customerNo, note, promiseDate` | Propose-then-confirm: dialog → write a local Dataverse record (never writes to BC directly) |
 
 **Shared state.** The dashboard spec is the state. It is a small JSON document (`{ groupBy: ["customer","agingBucket"], measures, filters, buckets }`) stored in Dataverse.

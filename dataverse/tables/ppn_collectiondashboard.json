@@ -1,0 +1,28 @@
+{
+  "logicalName": "ppn_collectiondashboard",
+  "entitySetName": "ppn_collectiondashboards",
+  "displayName": "Collection dashboard",
+  "displayCollectionName": "Collection dashboards",
+  "description": "Shared state between the Collections agent, its widget and the app: one DashboardSpec (JSON) per row. Last write wins on ppn_version.",
+  "ownership": "UserOwned",
+  "primaryName": { "logicalName": "ppn_name", "displayName": "Name", "maxLength": 200 },
+  "columns": [
+    { "logicalName": "ppn_specjson", "type": "Memo", "displayName": "Spec (JSON)", "maxLength": 100000, "description": "DashboardSpec v1 as JSON (see packages/contract/src/dashboard.ts)." },
+    { "logicalName": "ppn_version", "type": "Integer", "displayName": "Version", "min": 1, "max": 2147483647, "description": "Monotonic revision; mirrors spec.version." },
+    { "logicalName": "ppn_customerno", "type": "String", "displayName": "Customer number", "maxLength": 20, "description": "Set when the dashboard is scoped to one customer." }
+  ],
+  "relationships": [
+    {
+      "type": "ManyToOne",
+      "logicalName": "ppn_customer",
+      "displayName": "Customer",
+      "referencedEntity": "dyn365bc_customer_v2_0",
+      "schemaName": "ppn_dyn365bc_customer_collectiondashboard",
+      "note": "VERIFY: lookups from a native table to a BC virtual table. Optional; ppn_customerno is enough for the demo. Create it in the maker portal if supported in your environment."
+    }
+  ],
+  "notes": [
+    "The row id is the spec id (GUID) so the MCP server and the PCF upsert the same row.",
+    "Security: Collections agent users need Create/Read/Write at User level; the MCP server writes as the user (OBO)."
+  ]
+}

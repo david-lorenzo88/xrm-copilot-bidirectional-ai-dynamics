@@ -65,10 +65,10 @@ describe("DataverseRepository", () => {
     expect(await fresh.repo.listInvoices({ openOnly: true })).toEqual([]);
   });
 
-  it("stores dashboard specs in contoso_collectiondashboard with last-write-wins", async () => {
+  it("stores dashboard specs in ppn_collectiondashboard with last-write-wins", async () => {
     const stored = new Map<string, Record<string, unknown>>();
     const { repo, calls } = fakeDataverse((url, init) => {
-      const m = /contoso_collectiondashboards\((.+)\)/.exec(url.pathname);
+      const m = /ppn_collectiondashboards\((.+)\)/.exec(url.pathname);
       if (!m) return undefined;
       if (init.method === "PATCH") {
         stored.set(m[1]!, JSON.parse(String(init.body)));

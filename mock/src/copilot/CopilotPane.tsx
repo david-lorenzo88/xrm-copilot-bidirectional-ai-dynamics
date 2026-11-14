@@ -37,7 +37,7 @@ function renderMarkdownBold(text: string) {
 export interface CopilotPaneProps {
   copilot: FakeCopilot;
   mode: McpMode;
-  /** The simulated contoso_collectiondashboard table, shared with the app. */
+  /** The simulated ppn_collectiondashboard table, shared with the app. */
   dashboards: Map<string, DashboardSpec>;
 }
 

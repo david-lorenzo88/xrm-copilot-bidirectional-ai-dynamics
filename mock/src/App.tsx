@@ -24,7 +24,7 @@ copilot.addDefaultActionHandlers();
 (window as unknown as { Xrm: unknown }).Xrm = createFakeXrm(copilot); // like window.Xrm in a model-driven app
 installWidgetRelay(copilot);
 
-// One map = one contoso_collectiondashboard table, written by both the MCP server and the app.
+// One map = one ppn_collectiondashboard table, written by both the MCP server and the app.
 const dashboards = new Map<string, DashboardSpec>();
 const data = new FixtureDataService(undefined, dashboards);
 const xrm = getXrm(); // the same adapter the PCF uses
@@ -38,12 +38,12 @@ const bridge = createCollectionsBridge({
 });
 const originalAudit = data.audit.bind(data);
 data.audit = async (entry) => {
-  logEvent("audit", `contoso_collectionaction: ${entry.actionId} ${entry.outcome}`, entry);
+  logEvent("audit", `ppn_collectionaction: ${entry.actionId} ${entry.outcome}`, entry);
   return originalAudit(entry);
 };
 const originalFollowUp = data.createFollowUp.bind(data);
 data.createFollowUp = async (p) => {
-  logEvent("write", `contoso_collectionaction: follow-up for ${p.customerNo} (confirmed by user)`, p);
+  logEvent("write", `ppn_collectionaction: follow-up for ${p.customerNo} (confirmed by user)`, p);
   return originalFollowUp(p);
 };
 

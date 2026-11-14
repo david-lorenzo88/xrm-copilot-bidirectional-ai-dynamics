@@ -13,7 +13,7 @@ export class FixtureDataService implements CollectionsDataService {
 
   constructor(
     private readonly data: FixtureSet = defaultFixtures,
-    /** Share with MockRepository to simulate the one contoso_collectiondashboard table. */
+    /** Share with MockRepository to simulate the one ppn_collectiondashboard table. */
     readonly dashboards: Map<string, DashboardSpec> = new Map(),
   ) {}
 

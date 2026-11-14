@@ -25,7 +25,7 @@ One experience on two surfaces. The **Collections Workspace** model-driven app a
                                                      └──────────┬───────────┘
                                                                 │ Dataverse Web API (OBO, as the user)
                          Dataverse ── BC virtual tables (dyn365bc_*) ── Business Central
-                                   └─ contoso_collectiondashboard / contoso_collectionaction (local)
+                                   └─ ppn_collectiondashboard / ppn_collectionaction (local)
 ```
 
 ## Repository map
@@ -62,8 +62,8 @@ One experience on two surfaces. The **Collections Workspace** model-driven app a
 |---|---|---|
 | `Contoso.Collections.OpenInvoices` | `invoiceIds[1..5]`, `invoiceNumbers?` | One side pane per invoice (`Xrm.App.sidePanes.createPane` → `pane.navigate(entityrecord)`) |
 | `Contoso.Collections.ShowWorklist` | `title`, `fetchXml` (invoice table only), `invoiceIds?` (rank order) | Runs the FetchXML, re-orders by rank, renders the list in the control; with `worklistViewId` also `navigateTo` the saved view |
-| `Contoso.Collections.RenderDashboard` | `dashboardId` and/or `spec` | Persists the spec (LWW) to `contoso_collectiondashboard`, renders `<AgingDashboard>`, republishes context |
-| `Contoso.Collections.LogFollowUp` | `customerNo`, `note`, `promiseDate?`, `promisedAmount?` | Confirm dialog, then creates a `contoso_collectionaction` row. Never writes BC |
+| `Contoso.Collections.RenderDashboard` | `dashboardId` and/or `spec` | Persists the spec (LWW) to `ppn_collectiondashboard`, renders `<AgingDashboard>`, republishes context |
+| `Contoso.Collections.LogFollowUp` | `customerNo`, `note`, `promiseDate?`, `promisedAmount?` | Confirm dialog, then creates a `ppn_collectionaction` row. Never writes BC |
 | `MS.PA.CopilotChat.OpenRecord` / `NavigateToView` | built-in | Left to the platform's default handlers |
 
 Every incoming payload goes through `createActionGuard({ allowed, allowedEntities })`. Unknown ids,
@@ -98,7 +98,7 @@ component tree and one lifecycle (`destroy()` unregisters handlers).
 - **Stateless Streamable HTTP**: one `McpServer` + transport per POST, so it scales out on Azure Container Apps without sticky sessions. `GET/DELETE /mcp` return 405.
 - **Repository interface**: `MockRepository` (fixtures, in-memory dashboards) and `DataverseRepository` (Web API, OBO token per request via `@azure/msal-node`, token validation with `jose` against Entra JWKS, v1 and v2 issuers).
 - **Aging in code**: BC virtual tables have limited aggregate/group-by support, so the server (and the PCF) compute aging with `@collections/domain`.
-- **Read-only to ERP**: the only writes go to `contoso_collectiondashboard` (server and PCF) and `contoso_collectionaction` (PCF, after confirmation).
+- **Read-only to ERP**: the only writes go to `ppn_collectiondashboard` (server and PCF) and `ppn_collectionaction` (PCF, after confirmation).
 - **Tools**: `get_customer_context`, `analyze_payment_behavior`, `prioritize_collections` (widget), `propose_follow_up` (widget), `build_aging_dashboard` (widget), `get_dashboard` (widget), `update_dashboard` (widget). `propose_follow_up` was added beyond the original six. Without it, nothing in a real tenant could emit `LogFollowUp`. It writes nothing; its card posts the action and the app confirms.
 - **Widgets**: `registerAppTool(..., { _meta: { ui: { resourceUri } } })` + `registerAppResource(...)` with MIME `text/html;profile=mcp-app` and an empty CSP (single file, no fetches). Read-only tools carry `readOnlyHint: true`, the only annotation Copilot honours.
 - **Widget APIs used**: `ontoolinput`, `ontoolresult`, `callServerTool`, `updateModelContext`, `sendMessage`, `getHostCapabilities`, `getHostContext` and auto `sendSizeChanged`. Not used (unsupported in Copilot): `ontoolinputpartial`, `ontoolcancelled`, `onhostcontextchanged`, `onteardown`, `sendLog`.
@@ -118,4 +118,4 @@ component tree and one lifecycle (`destroy()` unregisters handlers).
 - The **real** `createCollectionsBridge` (PCF core) and `CollectionsBridgeApp` (PCF UI) run against it.
 - The Copilot pane runs the **real MCP server** in-page (`InMemoryTransport`, `MockRepository`) or a running one (`?mcp=http`). A scripted agent picks tools by intent, but all numbers come from tool calls.
 - Widgets are the **real built HTML**, loaded in sandboxed iframes via `AppBridge`. Their `postMessage` goes through a relay that only accepts known widget windows, to `FakeCopilot.deliverAction`, and from there to the PCF handlers.
-- One shared map stands in for the `contoso_collectiondashboard` table, so in-app edits are visible to `get_dashboard`, as they would be in Dataverse.
+- One shared map stands in for the `ppn_collectiondashboard` table, so in-app edits are visible to `get_dashboard`, as they would be in Dataverse.

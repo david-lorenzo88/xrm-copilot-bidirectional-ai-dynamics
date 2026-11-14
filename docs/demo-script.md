@@ -55,7 +55,7 @@ there ("this is the same code, with the platform faked").
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
 | Type: **"Build me a dashboard of overdue by customer and aging bucket"** | Dashboard (stacked bars + matrix) renders **in the panel** and, a moment later, **inside the app** | `build_aging_dashboard` stores a `DashboardSpec` → widget → `RenderDashboard` → PCF stores it (LWW) and renders the same `<AgingDashboard>` |
-| In the **app**, click the **Current** chip to drop it | App dashboard re-renders; header shows **v2 (app)** | Spec v2 saved to `contoso_collectiondashboard`; `updateContext({ dashboardId, dashboardVersion: 2, dashboardFilters })` |
+| In the **app**, click the **Current** chip to drop it | App dashboard re-renders; header shows **v2 (app)** | Spec v2 saved to `ppn_collectiondashboard`; `updateContext({ dashboardId, dashboardVersion: 2, dashboardFilters })` |
 | Type: **"What does the dashboard show now?"** | Agent: "You changed it in the app: v2, showing buckets 1–30, 31–60, 61–90, 90+…" | Agent calls `get_dashboard(dashboardId from context)` |
 | Optional: in the **widget**, toggle **1–30** | Widget updates, app follows (v3) | `app.callServerTool('update_dashboard')` → re-post `RenderDashboard` → `app.updateModelContext(...)` |
 
@@ -70,7 +70,7 @@ mock.
 
 Type: **"Log a follow-up: Fabrikam promised to pay SI-104008 by 2026-12-04"** → the agent calls
 `propose_follow_up` (writes nothing) → card in the panel → **Log in app** → the app shows a **confirm
-dialog** → **Log follow-up** → a `contoso_collectionaction` row. "The agent never writes to the ERP,
+dialog** → **Log follow-up** → a `ppn_collectionaction` row. "The agent never writes to the ERP,
 and nothing is written without a human click, in the app."
 
 Fallback if the widget route fails: the same action via Adaptive Card `Action.Submit` with

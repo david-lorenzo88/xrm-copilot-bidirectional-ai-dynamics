@@ -22,9 +22,9 @@ Learn the week before you ship, and date-stamp it.
 
 - [ ] 🔧 Agent publish/approval in the **Microsoft 365 admin center**; scope to the collections team.
 - [ ] 🔧 **DLP**: classify the MCP connector/endpoint; block it from personal environments.
-- [ ] ✅ **Audit of agent-initiated actions**: every handled, rejected or failed action is written to `contoso_collectionaction` (`bridge.ts` → `data.audit`). 🔧 Turn on Dataverse auditing and a retention policy for that table.
+- [ ] ✅ **Audit of agent-initiated actions**: every handled, rejected or failed action is written to `ppn_collectionaction` (`bridge.ts` → `data.audit`). 🔧 Turn on Dataverse auditing and a retention policy for that table.
 - [ ] ⚠️ **Data residency**: the platform adds `geo` to the context; make sure the MCP server runs in the same geography as Dataverse (Container Apps region).
-- [ ] ✅ **Read-only to the ERP**: no code path writes to BC. Writes go to `contoso_collectiondashboard` (spec) and `contoso_collectionaction` (audit, follow-ups).
+- [ ] ✅ **Read-only to the ERP**: no code path writes to BC. Writes go to `ppn_collectiondashboard` (spec) and `ppn_collectionaction` (audit, follow-ups).
 
 ## Security
 
@@ -78,4 +78,4 @@ Learn the week before you ship, and date-stamp it.
 | `packages/collections-domain/src/dataverse-mapping.ts` | Invoice status surfaces as text or choice |
 | `agent/m365agents.yml`, `agent/appPackage/*.json` | Toolkit schema versions; `RemoteMCPServer` runtime shape; Entra SSO registration details |
 | `docs/setup.md` §6.7 | `gptId` format (read it with `Xrm.Copilot.getCurrentAgent()`) |
-| `dataverse/tables/contoso_collectiondashboard.json` | Native → virtual table lookup support |
+| `dataverse/tables/ppn_collectiondashboard.json` | Native → virtual table lookup support |

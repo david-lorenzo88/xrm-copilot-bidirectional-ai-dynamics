@@ -10,7 +10,7 @@
 set -euo pipefail
 
 SOLUTION=${SOLUTION:-ContosoCollections}
-PUBLISHER_PREFIX=${PUBLISHER_PREFIX:-contoso}
+PUBLISHER_PREFIX=${PUBLISHER_PREFIX:-ppn}
 SOL_DIR="dataverse/solution/${SOLUTION}"
 PCF_DIR="pcf/CollectionsBridge"
 
@@ -23,7 +23,7 @@ case "${1:-}" in
   init)
     # Empty solution project (if you prefer to start from code instead of clone).
     mkdir -p "${SOL_DIR}"
-    (cd "${SOL_DIR}" && pac solution init --publisher-name Contoso --publisher-prefix "${PUBLISHER_PREFIX}" && pac solution add-reference --path "../../../${PCF_DIR}")
+    (cd "${SOL_DIR}" && pac solution init --publisher-name PowerPlatformNinja --publisher-prefix "${PUBLISHER_PREFIX}" && pac solution add-reference --path "../../../${PCF_DIR}")
     ;;
   sync)
     (cd "${SOL_DIR}" && pac solution sync)

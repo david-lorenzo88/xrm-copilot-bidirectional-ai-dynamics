@@ -14,7 +14,7 @@ then `pac solution clone` them into source control and pack and import from ther
 
 ## Publisher
 
-- Display name **Contoso**, prefix **`contoso`** (option value prefix e.g. 10000). All local names in this repository use it.
+- Prefix **`ppn`**. If the environment already has a publisher with this prefix, reuse it (same unique name) instead of creating a second one. All local names in this repository use it.
 
 ## Components
 
@@ -33,10 +33,10 @@ The logical/column names the code uses are in one place: `packages/collections-d
 
 ### 2. Local tables (owned)
 
-- **`contoso_collectiondashboard`**: the shared dashboard state (`contoso_specjson`, `contoso_version`, `contoso_customerno`, optional `contoso_customer` lookup). See `tables/contoso_collectiondashboard.json`.
-- **`contoso_collectionaction`**: audit of every agent action the app handled, rejected or failed, plus confirmed follow-ups. See `tables/contoso_collectionaction.json`.
+- **`ppn_collectiondashboard`**: the shared dashboard state (`ppn_specjson`, `ppn_version`, `ppn_customerno`, optional `ppn_customer` lookup). See `tables/ppn_collectiondashboard.json`.
+- **`ppn_collectionaction`**: audit of every agent action the app handled, rejected or failed, plus confirmed follow-ups. See `tables/ppn_collectionaction.json`.
 
-### 3. PCF control `contoso_Contoso.CollectionsBridge`
+### 3. PCF control `ppn_Contoso.CollectionsBridge`
 
 Added with `pac solution add-reference` (the scripts do it). Place it on the **Customer main form**
 (`dyn365bc_customer_v2_0`), bound to the customer number column, in a full-width one-column section
@@ -71,7 +71,7 @@ Add an **Overdue invoices** subgrid to the Customer main form (related records: 
 - **Collection dashboard (main)**: name, version, customer number, spec JSON (read-only for most users).
 - **Collection action (main)**: read-only audit form.
 
-### 6. Model-driven app **Collections Workspace** (`contoso_CollectionsWorkspace`)
+### 6. Model-driven app **Collections Workspace** (`ppn_CollectionsWorkspace`)
 
 Sitemap:
 
@@ -80,8 +80,8 @@ Collections
 ├── Customers            → dyn365bc_customer_v2_0 (Active customers)
 ├── Overdue invoices     → dyn365bc_salesinvoice_v2_0 (Overdue invoices view)
 └── Insights
-    ├── Dashboards       → contoso_collectiondashboard
-    └── Follow-ups & audit → contoso_collectionaction
+    ├── Dashboards       → ppn_collectiondashboard
+    └── Follow-ups & audit → ppn_collectionaction
 ```
 
 App settings: **Copilot → Microsoft 365 Copilot** on, and set the **default agent** to *Collections*
@@ -92,8 +92,8 @@ App settings: **Copilot → Microsoft 365 Copilot** on, and set the **default ag
 | Table | Privileges |
 |---|---|
 | `dyn365bc_customer_v2_0`, `dyn365bc_salesinvoice_v2_0`, ledger entries | Read (Organization). The virtual table provider enforces BC permissions too |
-| `contoso_collectiondashboard` | Create, Read, Write (User), Append/Append To |
-| `contoso_collectionaction` | Create, Read (User); no Write/Delete (audit) |
+| `ppn_collectiondashboard` | Create, Read, Write (User), Append/Append To |
+| `ppn_collectionaction` | Create, Read (User); no Write/Delete (audit) |
 | App | Collections Workspace |
 
 The MCP server reads and writes **as the user** (on-behalf-of), so this role is also the agent's ceiling.
