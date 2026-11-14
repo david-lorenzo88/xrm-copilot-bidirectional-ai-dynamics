@@ -12,6 +12,7 @@ import os
 import sys
 
 from pptx import Presentation
+from pptx.util import Inches, Pt
 
 sys.path.insert(0, os.path.dirname(__file__))
 from pptx_kit import (  # noqa: E402
@@ -288,7 +289,7 @@ def s_architecture(prs):
     # data layer
     dv = box(s, 0.62, 5.6, 12.11, 1.1, fill=ICE, radius=0.1, name="Dataverse")
     text(s, 0, 0, 0, 0, [{"runs": [{"t": "Dataverse  ", "b": True, "size": 15},
-                                    {"t": "BC virtual tables (dyn365bc_*)  ·  dashboard spec = shared state  ·  "
+                                    {"t": "BC virtual tables + custom ledger API  ·  dashboard spec = shared state  ·  "
                                            "audit of agent actions  ⇄  ", "size": 12},
                                     {"t": "Business Central", "b": True, "size": 12}]}],
          align="c", anchor="m", target=dv)
@@ -549,15 +550,17 @@ def s_erp(prs):
     set_text(shape(s, 50), "Business Central virtual tables put live ERP data in Dataverse: the app, "
                            "the agent and its tools all read one source.")
     for sid, head, body in [
-        (86, "Read live", "Customers, invoices and ledger via dyn365bc_*"),
-        (87, "Compute", "Aging and risk in code: virtual tables aggregate poorly"),
+        (86, "Read live", "Customers and invoices, plus a custom ledger API"),
+        (87, "Compute", "Aging and risk in code: amounts can't be filtered"),
         (88, "Write local", "Proposals land in Dataverse, never in the ERP"),
     ]:
         set_text(shape(s, sid), two_part(head, body))
     notes(s, """Three rules for putting agents on ERP data.
-Read live: enable the Business Central virtual tables you need (customers, sales invoices, ledger entries).
-Compute in code: virtual tables have limited aggregate and group-by support, so aging buckets and risk scores
-are calculated in the MCP server, which is also easier to test.
+Read live: make the Business Central virtual tables you need visible (customer, salesInvoice). The standard API has
+no customer ledger entries, so a small AL extension adds a read-only API page; the catalog picks it up as
+dyn365bc_customerledgerentry_ppn_collections_v1_0 and payment history (days late, trend) comes from it.
+Compute in code: remaining amount can't be filtered or sorted on the virtual table, so open means status Open and
+aging buckets and risk scores are calculated in the MCP server, which is also easier to test.
 Write locally: anything the agent proposes is written to local Dataverse tables after user confirmation.
 The ERP stays the system of record, untouched by the agent.""")
 
@@ -575,7 +578,7 @@ def s_ga_preview(prs):
          ["Pilots and prototypes", "Keep behind a flag"],
          "Copilot Studio-first teams"),
         (36, 38, 43, 103, ["Verify before", "you ship"],
-         "updateContext status, MCP Apps feature coverage in Copilot",
+         "updateContext status, MCP Apps coverage, the Agents panel (preview)",
          ["Docs disagree today", "Isolate in one adapter"],
          VERIFIED_ON.replace("Verified against Microsoft Learn, ", "Checked: ")),
     ]
@@ -589,23 +592,26 @@ GA: everything you need for the bridge: sending prompts, opening the panel, avai
 built-in handlers, getCurrentAgent.
 Preview: the Copilot Studio pair, executeEvent and executePrompt. Great for pilots, not for production.
 Verify: updateContext is listed GA in the API reference but preview on the maker page, and MCP Apps in Copilot
-support only part of the spec (no host-context change, no teardown, only readOnlyHint).""")
+support only part of the spec (no host-context change, no teardown, only readOnlyHint). In the app designer, the
+Agents panel where you pick the default agent says "These experiences are in preview".""")
 
 
 def s_licensing(prs):
     s = new(prs, T_TITLE_ICON_COLS_A)
     set_text(shape(s, 37), "Licensing & prerequisites")
     set_text(shape(s, 39), "Every switch must be on: isM365CopilotEnabled checks license, environment, "
-                           "Dataverse indexing, app override and rollout.")
+                           "Dataverse search, app override and rollout.")
     for sid, head, body in [
         (40, "Users", "Microsoft 365 Copilot plus Dynamics 365 or Power Apps"),
-        (46, "Environment", "Copilot on for tenant, env and app; Dataverse search on"),
-        (47, "ERP & agent", "BC virtual tables set up; agent approved by admin"),
+        (46, "Environment", "Copilot on per app; Dataverse search; tenant data setting"),
+        (47, "ERP & agent", "BC linked to Dataverse; agent as the app's default"),
     ]:
         set_text(shape(s, sid), two_part(head, body))
     notes(s, """Users need a Microsoft 365 Copilot license on top of their Dynamics 365 or Power Apps license, and a
-Business Central license to use the ERP data. Copilot must be enabled at tenant, environment and app level,
-with Dataverse search indexing on, and the default agent set in the app's Copilot settings.
+Business Central license to use the ERP data. In the demo tenant the app-level setting "Enable M365 Copilot in
+model-driven apps" turned it on for this app only; the tenant must allow "Dataverse data available in Microsoft
+Copilot" and Dataverse search must be on. The default agent is picked in the app designer's Agents panel and is
+stored in an environment variable as T_<titleId>.declarativeAgent, the same id the PCF passes as gptId.
 The declarative agent must be published and approved in the Microsoft 365 admin center.
 Licensing changes often: confirm the current requirements with your Microsoft contact.""")
 
@@ -618,7 +624,7 @@ def s_checklist(prs):
         (311, 316, "Governance", "Agent approval in M365 admin, DLP for the MCP connector, audit agent actions"),
         (312, 317, "Security", "Entra SSO + OBO, least privilege, action allow-list, validate payloads"),
         (313, 318, "ALM", "Ship solution, PCF, agent and MCP server as one release"),
-        (314, 319, "Gotchas", "30-min enablement cache, widget domain, hidden starters"),
+        (314, 319, "Gotchas", "Publish All, 30-min cache, widget domain"),
     ]
     for label_id, desc_id, label, desc in rows:
         set_text(shape(s, label_id), [{"runs": [{"t": label, "b": True}]}])
@@ -630,8 +636,105 @@ action the agent triggered in the app.
 Security: Entra SSO with on-behalf-of to Dataverse, so the agent sees only what the user can see; an allow-list
 of action IDs; validate every postMessage payload.
 ALM: four artifacts (Dataverse solution, PCF, agent package, Azure service) versioned and released together.
-Gotchas: isM365CopilotEnabled caches for 30 minutes; widgets run on a hashed widget-renderer domain (CSP/CORS);
+Gotchas: pac pcf push publishes every pending customization in the environment (ship the PCF as a solution
+import); isM365CopilotEnabled caches for 30 minutes; widgets run on a hashed widget-renderer domain (CSP/CORS);
 starter prompts don't render when a default agent is set.""")
+
+
+def s_how_built(prs):
+    s = white_title(prs, "How we built it")
+    milestones = [
+        ("Plan", "Learn docs, the bridge contract, three demo beats", "PLAN.md"),
+        ("Code", "PCF, MCP Apps server, agent, mock host · 107 tests", "TypeScript · React"),
+        ("Dataverse app", "Tables, views, forms, app and role from an App Spec", "app-builder skill"),
+        ("BC demo data", "25 customers, 300 invoices, 269 payments posted", "BC API · OData"),
+        ("Azure + Entra", "Container App, SSO, OBO via managed identity", "az · Container Apps"),
+        ("Agent", "Dev Portal SSO, package, Microsoft 365 upload", "Dev Portal APIs"),
+        ("BC linked", "Virtual tables, customer form, PCF bound", "app-builder · pac"),
+        ("Ledger API", "AL extension as a PTE: live payment history", "AL CLI"),
+    ]
+    from pptx.dml.color import RGBColor
+    for row in range(2):
+        y = 2.25 + row * 2.2
+        line = s.shapes.add_connector(1, Inches(0.9), Inches(y), Inches(12.45), Inches(y))
+        line.line.color.rgb = RGBColor.from_string("D9D9D9")
+        line.line.width = Pt(3)
+        for col in range(4):
+            n = row * 4 + col
+            head, body, tool = milestones[n]
+            cx = 0.9 + col * 3.1 + 0.25
+            dot = box(s, cx - 0.25, y - 0.25, 0.5, 0.5, fill=RED if n < 7 else DARK_RED, radius=0.5, name=f"Step {n + 1}")
+            text(s, 0, 0, 0, 0, [{"t": str(n + 1), "b": True}], size=14, color=WHITE, font=BODY_FONT_BOLD, align="c", anchor="m", target=dot)
+            text(s, cx - 0.25, y + 0.38, 2.85, 1.5, [
+                {"runs": [{"t": head, "b": True}], "size": 17, "font": BODY_FONT_BOLD, "space_after": 3},
+                {"runs": [{"t": body}], "size": 13, "color": MID_GREY, "space_after": 5},
+                {"runs": [{"t": tool, "font": CODE_FONT}], "size": 11.5, "color": RED},
+            ], size=12)
+    text(s, 0.62, 6.45, 12.1, 0.4, [{"runs": [
+        {"t": "Every step is a script in ", "color": MID_GREY},
+        {"t": "deploy/", "font": CODE_FONT, "color": INK},
+        {"t": " or a skill from Microsoft's power-platform-skills, so the whole tenant setup can be replayed.", "color": MID_GREY}]}], size=12)
+    notes(s, """How the demo was built, end to end, in one working session. Plan from the Learn docs, then the code:
+a PCF bridge, an MCP Apps server, a declarative agent and an offline mock host, with 107 tests.
+The model-driven app was authored as an App Spec and built with the app-builder skill from Microsoft's
+power-platform-skills. Business Central got 300 invoices and their payments through its API. Azure hosts the MCP
+server with Entra SSO and on-behalf-of to Dataverse through a managed identity, no secrets. The agent was published
+through the Developer Portal and Microsoft 365 APIs. After linking Business Central, the virtual tables, the customer
+form and the PCF binding followed, and a small AL extension added the customer ledger for payment history.""")
+
+
+def s_sharp_edges(prs, title, cards, note):
+    s = white_title(prs, title)
+    w, h, gx, gy = (12.11 - 0.6) / 3, (4.85 - 0.3) / 2, 0.3, 0.3
+    for k, (head, body, fix) in enumerate(cards):
+        x, y = 0.62 + (k % 3) * (w + gx), 1.9 + (k // 3) * (h + gy)
+        box(s, x, y, w, h, fill=GREY, radius=0.06, name=f"Edge {k + 1}")
+        text(s, x + 0.25, y + 0.2, w - 0.5, h - 0.35, [
+            {"runs": [{"t": head, "b": True, "color": RED}], "size": 17, "font": BODY_FONT_BOLD, "space_after": 8},
+            {"runs": [{"t": body}], "size": 14, "space_after": 10},
+            {"runs": [{"t": "Fix: ", "b": True, "color": INK, "font": BODY_FONT_BOLD}, {"t": fix, "color": MID_GREY}], "size": 13.5},
+        ], size=14)
+    notes(s, note)
+
+
+def s_sharp_bc(prs):
+    s_sharp_edges(prs, "Sharp edges: BC virtual tables", [
+        ("FetchXML top returns one row", "Any top attribute on a BC virtual table query comes back with a single row.", "never emit top; cap in code (OData $top is fine)"),
+        ("Amounts don't filter or sort", "remainingAmount can't be filtered or used for ordering.", "open = status Open; sort by due date"),
+        ("No OR across fields", "number eq X or startswith(name, X) is rejected.", "query each field separately"),
+        ("Tables appear on demand", "Linking BC fills the catalog; no dyn365bc_* table exists yet.", "set the catalog row's Visible flag"),
+        ("No customer ledger API", "Payment history needs Closed at Date; no standard API has it.", "a custom API page, installed as a PTE"),
+        ("Same names, other customers", "CRONUS ES already has Adatum, Trey Research, Relecloud…", "scope views and the server to DEMO\u2011C\u2011"),
+    ], """Everything on this slide was found against the real tenant, not in the docs.
+FetchXML top: any top attribute made the Business Central provider return exactly one row. OData $top works.
+Remaining amount is computed in Business Central, so the virtual table can't filter or sort on it: open means
+status Open, and the worklist is ordered by due date.
+OR across two different fields is rejected; OR on the same field is fine.
+Tables only exist after you make them visible in the Available Virtual Tables catalog.
+The standard API v2.0 has no customer ledger entries: a twelve-line AL API page fixes that, and the catalog names
+custom APIs entity_publisher_group_version.
+And demo data hygiene: CRONUS ES ships customers with the same names as ours, so the demo is scoped to DEMO-C-.""")
+
+
+def s_sharp_tooling(prs):
+    s_sharp_edges(prs, "Sharp edges: building it for real", [
+        ("pac pcf push = Publish All", "It ships the control and publishes every pending customization in the environment.", "ship the PCF as a solution import"),
+        ("Copilot is on per app", "One app setting turns it on; the default agent lives in an environment variable.", "script it; reuse T_….declarativeAgent as gptId"),
+        ("Agents Toolkit in a container", "Its browser sign-in can't finish on a remote machine.", "device code + the same Dev Portal and Microsoft 365 APIs"),
+        ("Entra SSO for an MCP server", "The Dev Portal registration adds its own Application ID URI.", "expose it, pre-authorize the token store, accept the audience"),
+        ("OBO without secrets", "The server must exchange the user's token for Dataverse.", "managed identity as a federated credential"),
+        ("Seeding Business Central", "API v2.0 can't set posting groups or post payment journals.", "OData pages and a general journal batch"),
+    ], """The tooling side. pac pcf push is convenient, but it ends with Publish All Customizations for the whole
+environment: in a shared environment, import the control as a solution instead.
+Copilot in model-driven apps can be turned on for a single app with an app setting, and the default agent you pick
+in the Agents panel is stored in an environment variable, as T_<titleId>.declarativeAgent.
+The Agents Toolkit CLI signs in with a browser redirect to localhost, which can't complete from a container or a
+build agent: a device-code sign-in against the same Developer Portal and Microsoft 365 APIs works.
+For Entra SSO, the Developer Portal registration gives you an Application ID URI to add to the app registration,
+plus the token store to pre-authorize; the MCP server must accept that audience.
+On-behalf-of without a client secret: a user-assigned managed identity as a federated credential of the app.
+And seeding Business Central: the API can't set posting groups or post payment journals, so the seed script uses
+the published OData pages and a general journal batch.""")
 
 
 def s_takeaways(prs):
@@ -720,15 +823,18 @@ Change a filter in the app: the PCF updates the spec and the context, and the ag
     s_erp(prs)
     s_section(prs, T_SECTION_A, "Production reality",
               "What is GA, what it takes to license and run, and the sharp edges.")
+    s_how_built(prs)
     s_ga_preview(prs)
     s_licensing(prs)
+    s_sharp_bc(prs)
+    s_sharp_tooling(prs)
     s_checklist(prs)
     s_takeaways(prs)
     s_resources(prs)
     s_thanks(prs)
 
     drop_slides(prs, n_template)
-    set_sections(prs, [("Opening", 6), ("Live demo", 5), ("Architecture", 10), ("Production", 4), ("Closing", 3)])
+    set_sections(prs, [("Opening", 6), ("Live demo", 5), ("Architecture", 10), ("Production", 7), ("Closing", 3)])
     drop_revision_parts(prs)
     fix_duplicate_shape_ids(prs)
     prs.save(OUTPUT)
