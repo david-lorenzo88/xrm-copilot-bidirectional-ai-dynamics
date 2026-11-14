@@ -60,16 +60,17 @@ and go to Beat 2: the button embeds the context in the prompt.
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
-| Control → **Analyze payment behavior** | The prompt *"Analyze this customer's payment behavior and tell me what to chase today."* appears in the pane, sent by the app. The agent: about 40 days late, worsening, risk 82 | `sendPromptToM365Copilot(prompt + [App context], { gptId })`, gptId from the app's default-agent variable → `analyze_payment_behavior` |
-| (no click) | The **priority-list widget** renders in the pane, 103304 at the top (*Call today*). Side panes open for the critical invoices; the control switches to **Chase today** in rank order | `prioritize_collections` → widget `postMessage({ eventName: 'powerapps.copilot.chat.action', action: 'Contoso.Collections.OpenInvoices' … })` and `ShowWorklist` → `addActionHandler` handlers → `Xrm.App.sidePanes.createPane` + ranked list |
+| Control → **Analyze payment behavior** | The prompt *"Use the Collections tools to analyze the payment behavior of Fabrikam, Inc. (DEMO-C-1001) and prioritize what to chase today."* appears in the pane, sent by the app. The agent: 39.7 days late, worsening 3.8 days/month, risk 85 | `sendPromptToM365Copilot(prompt, { gptId })` with the customer named in the prompt (authored agents don't receive `updateContext`), gptId from the app's default-agent variable → `get_customer_context`, `analyze_payment_behavior`, `prioritize_collections` (2–6 s, live virtual tables) |
+| (no click) | The **priority-list widget** renders in the pane, 103304 at the top (*Call today*); the control switches to **Chase today** in rank order, with the same next steps as the widget | `prioritize_collections` → widget `postMessage({ eventName: 'powerapps.copilot.chat.action', action: 'Contoso.Collections.ShowWorklist' … })` → `addActionHandler` handler → ranked list in the control |
+| Widget → **Open 3 critical invoices** | Side panes open for 103304, 103306, 103307 on the *Collections invoice* form | `OpenInvoices` action → `Xrm.App.sidePanes.createPane` per invoice (opened on click, not automatically: they cover the page) |
 | Click the **103304** side pane | The €48,499.99 invoice, a normal BC sales invoice form over the virtual table | Side pane = record form, live from Business Central |
 
 **Point at:** every number came from a tool call (the instructions forbid estimates). Every payload passed
 the contract's allow-list before anything opened (show `bridge/handlers.ts`).
 
-**If it fails:** if no side panes open, the widget action didn't reach the app. Click **Open critical
-invoices** in the widget. If that fails too, switch to the mock tab and repeat the beat there ("same code,
-with the platform faked").
+**If it fails:** if the agent answers from Work IQ (no widget, vague numbers), start a new chat and click the button again.
+If the control doesn't switch to **Chase today**, click **Show chase-today list** in the widget. If that fails too,
+switch to the mock tab and repeat the beat there ("same code, with the platform faked").
 
 ## Beat 3: Generative UI on two surfaces (5 min)
 

@@ -85,7 +85,7 @@
             "maximum": 365
           },
           "applyInApp": {
-            "description": "Open critical invoices and the worklist in the app straight away (default true; navigation only)",
+            "description": "Show the chase-today worklist in the app straight away (default true; navigation only). Critical invoices open in side panes only when the user clicks in the widget",
             "type": "boolean"
           }
         },

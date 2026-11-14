@@ -6,9 +6,12 @@ import type { FollowUpProposal, PrioritizeResult } from "../../src/tools/handler
 import { callTool, postAppAction, useToolResult } from "./host";
 import { ToolError, Waiting, mount } from "./WidgetShell";
 
-/** Sends the ready-made app actions from the tool result (navigation only; nothing is written). */
+/**
+ * On render, only the chase-today list goes to the app (it sits inside the control). Side panes
+ * cover the page, so they open when the user clicks "Open N critical invoices" (feedback from the
+ * live run: auto-opened panes before the answer was read felt intrusive). Navigation only.
+ */
 function applyInApp({ actions }: PrioritizeResult): void {
-  if (actions.openInvoices) postAppAction(ActionIds.OpenInvoices, actions.openInvoices);
   if (actions.showWorklist) postAppAction(ActionIds.ShowWorklist, actions.showWorklist);
 }
 

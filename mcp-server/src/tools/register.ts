@@ -56,7 +56,7 @@ export function registerTools(server: McpServer, repo: CollectionsRepository): v
         customerNo: customerNo.optional(),
         limit: z.int().min(1).max(50).optional(),
         minDaysOverdue: z.int().min(0).max(365).optional(),
-        applyInApp: z.boolean().optional().describe("Open critical invoices and the worklist in the app straight away (default true; navigation only)"),
+        applyInApp: z.boolean().optional().describe("Show the chase-today worklist in the app straight away (default true; navigation only). Critical invoices open in side panes only when the user clicks in the widget"),
       },
       annotations: { readOnlyHint: true },
       _meta: { ui: { resourceUri: WIDGETS.priorityList.uri } },

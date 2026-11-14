@@ -31,7 +31,7 @@ export function summarizeWorklist(r: PrioritizeResult): string {
     (i) => `${i.rank}. ${i.invoiceNo} ${i.customerName} ${money(i.remainingAmount, i.currency)} ${i.daysOverdue}d score ${i.score}${i.critical ? " CRITICAL" : ""} – ${i.suggestedAction} (${i.reasons.join(", ")})`,
   );
   const scope = r.scope.customerName ?? "all customers";
-  const applied = r.autoApply ? "The widget is opening the critical invoices and the worklist in the app." : "The user can open them from the widget.";
+  const applied = r.autoApply ? "The widget is showing the worklist in the app; the user opens the critical invoices in side panes from the widget." : "The user can open the invoices and the worklist from the widget.";
   return [`Chase-today list for ${scope} as of ${r.asOf}: ${r.items.length} overdue invoice(s).`, ...lines, applied].join("\n");
 }
 
