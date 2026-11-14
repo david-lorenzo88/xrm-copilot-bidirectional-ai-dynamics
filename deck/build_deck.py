@@ -16,8 +16,8 @@ from pptx import Presentation
 sys.path.insert(0, os.path.dirname(__file__))
 from pptx_kit import (  # noqa: E402
     BODY_FONT, BODY_FONT_BOLD, CODE_FONT, DARK_RED, GREY, ICE, INK, MID_GREY, RED, WHITE, YELLOW,
-    arrow, box, code_panel, drop_slides, duplicate, move, notes, picture, remove,
-    remove_empty_placeholders, replace_picture, set_text, shape, text,
+    arrow, box, fix_duplicate_shape_ids, code_panel, drop_revision_parts, drop_slides, duplicate, move,
+    notes, picture, remove, remove_empty_placeholders, replace_picture, set_sections, set_text, shape, text,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -681,6 +681,9 @@ Change a filter in the app: the PCF updates the spec and the context, and the ag
     s_thanks(prs)
 
     drop_slides(prs, n_template)
+    set_sections(prs, [("Opening", 6), ("Live demo", 5), ("Architecture", 9), ("Production", 4), ("Closing", 3)])
+    drop_revision_parts(prs)
+    fix_duplicate_shape_ids(prs)
     prs.save(OUTPUT)
     print(f"Wrote {OUTPUT} ({len(prs.slides)} slides)")
 

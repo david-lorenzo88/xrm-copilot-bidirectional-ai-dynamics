@@ -382,3 +382,56 @@ def code_panel(slide, x, y, w, h, code: str, size=13, label=None):
     text(slide, x + 0.25, top, w - 0.5, h - (top - y) - 0.1,
          [{"runs": code_runs(l, size)} for l in lines], size=size, font=CODE_FONT, name="Code")
     return panel
+
+
+# --------------------------------------------------------------------------- package hygiene
+P14_NS = "http://schemas.microsoft.com/office/powerpoint/2010/main"
+
+
+def set_sections(prs, sections):
+    """Rewrite the section list. `sections` is [(name, slide_count), ...] covering every slide.
+
+    The template ships its own section list; once its slides are dropped, stale section entries
+    point at slide ids that no longer exist and PowerPoint reports the file as needing repair.
+    """
+    import uuid
+
+    pres = prs.part._element
+    sld_ids = [s.get("id") for s in prs.slides._sldIdLst]
+    assert sum(n for _, n in sections) == len(sld_ids), "sections must cover every slide"
+    ext_lst = pres.find(qn("p:extLst"))
+    if ext_lst is None:
+        ext_lst = etree.SubElement(pres, qn("p:extLst"))
+    for ext in list(ext_lst):
+        if ext.find("{%s}sectionLst" % P14_NS) is not None:
+            ext_lst.remove(ext)
+    ext = etree.Element(qn("p:ext"), uri="{521415D9-36F7-43E2-AB2F-B90AF26B5E84}")
+    sec_lst = etree.SubElement(ext, "{%s}sectionLst" % P14_NS, nsmap={"p14": P14_NS})
+    i = 0
+    for name, n in sections:
+        sec = etree.SubElement(sec_lst, "{%s}section" % P14_NS, name=name, id="{%s}" % str(uuid.uuid4()).upper())
+        ids = etree.SubElement(sec, "{%s}sldIdLst" % P14_NS)
+        for sid in sld_ids[i:i + n]:
+            etree.SubElement(ids, "{%s}sldId" % P14_NS, id=sid)
+        i += n
+    ext_lst.insert(0, ext)
+
+
+def drop_revision_parts(prs):
+    """Remove the template's co-authoring history (it references the template's own slides)."""
+    for rid, rel in list(prs.part.rels.items()):
+        if rel.reltype.endswith("/changesInfo") or rel.reltype.endswith("/revisionInfo"):
+            prs.part.drop_rel(rid)
+
+
+def fix_duplicate_shape_ids(prs):
+    """Give every shape on a slide a unique id (the template itself reuses a few)."""
+    for slide in prs.slides:
+        els = list(slide._element.iter(qn("p:cNvPr")))
+        next_id = max(int(el.get("id")) for el in els) + 1
+        seen = set()
+        for el in els:
+            if el.get("id") in seen:
+                el.set("id", str(next_id))
+                next_id += 1
+            seen.add(el.get("id"))
