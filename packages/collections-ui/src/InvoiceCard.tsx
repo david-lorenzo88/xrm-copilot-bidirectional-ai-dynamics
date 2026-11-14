@@ -18,6 +18,9 @@ const useStyles = makeStyles({
   card: { minWidth: "200px", maxWidth: "320px" },
   amount: { fontSize: tokens.fontSizeBase500, fontWeight: tokens.fontWeightSemibold, fontVariantNumeric: "tabular-nums" },
   reasons: { color: tokens.colorNeutralForeground3 },
+  // The badge sits in the card header's action slot; without this it wraps "100 days overdue" onto
+  // three lines inside a one-line pill and only "days" shows (seen in the Copilot pane).
+  badge: { whiteSpace: "nowrap", flexShrink: 0 },
 });
 
 export function overdueBadgeColor(days: number): "success" | "warning" | "severe" | "danger" {
@@ -41,7 +44,7 @@ export function InvoiceCard({ invoice, onOpen }: InvoiceCardProps) {
         header={<Text weight="semibold">{invoice.invoiceNo}</Text>}
         description={<Caption1>{invoice.customerName}</Caption1>}
         action={
-          <Badge appearance="filled" color={overdueBadgeColor(invoice.daysOverdue)}>
+          <Badge className={styles.badge} appearance="filled" color={overdueBadgeColor(invoice.daysOverdue)}>
             {overdue}
           </Badge>
         }
