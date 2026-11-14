@@ -152,9 +152,26 @@ az containerapp create -g $RG -n $APP --environment $ENVNAME \
 
 ## 7. Copilot settings for the app
 
-1. Power Platform admin center → environment → **Features**: Microsoft 365 Copilot in model-driven apps **on**. Make sure **Dataverse search** is on.
-2. Power Apps → **Collections Workspace** → *Settings* → *Upcoming/Features*: Microsoft 365 Copilot chat **on** (app-level override).
-3. The user's licence and rollout flags: `Xrm.Copilot.isM365CopilotEnabled()` checks licence, environment setting, Dataverse indexing, app override and rollout, and **caches the answer for 30 minutes**. After changing settings, use a fresh browser session.
+All of these must be on, or `Xrm.Copilot.isM365CopilotEnabled()` returns `false`, there is no Copilot button in
+the app header and every `Xrm.Copilot` call does nothing.
+
+1. **Microsoft 365 admin center → Copilot → Settings → "Business Applications data in Work IQ available to
+   Copilot"** (older name: *Dataverse data available in Microsoft Copilot*) → **All users** or a group with the demo
+   users. Needs AI administrator or Global administrator. In the demo tenant this was **None** and was the missing
+   switch: the app showed no Copilot button and `isM365CopilotEnabled()` returned `false` with everything else on.
+2. **Power Platform admin center → Copilot → Settings → Power Apps → Chat agent → Microsoft Copilot** → **On** for
+   the environment.
+3. **Power Platform admin center → Environments → *env* → Settings → Product → Features**: *Copilot* ("Allow users to
+   analyze data using an AI-powered chat experience…") **On**; *Dataverse intelligence* ("Allow data availability in
+   Microsoft 365 Copilot") **On**; *Dataverse search* **On**.
+4. **App**: Power Apps → **Collections Workspace** → *Settings* → *Features* → *Microsoft Copilot in model-driven
+   apps* **On**, save and **publish** (stored as app setting `m365copilotmodelappenabled` = 2; `deploy/app-settings.sh`
+   does it by script). The environment-wide alternative is the same setting's environment value `2` in the Default
+   Solution, which turns it on for every model-driven app in the environment.
+5. **Licence**: Microsoft 365 Copilot plus Power Apps premium (or Dynamics 365 Enterprise/Premium for Dynamics 365 apps).
+6. **Check**: `await Xrm.Copilot.isM365CopilotEnabled()` in the browser console on any app page. It checks a kill
+   switch, licence, environment setting, Dataverse indexing, the app override and a gradual-rollout flag, and **caches
+   the answer for 30 minutes**: after changing a setting, test in a new InPrivate window.
 
 ## 8. Set the default agent
 

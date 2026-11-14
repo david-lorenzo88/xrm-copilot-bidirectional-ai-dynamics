@@ -14,7 +14,8 @@ the week before you ship, and date-stamp it.
 
 ## Environment and Copilot settings
 
-- [ ] 🔧 **Tenant**: Microsoft 365 Copilot available to the users; *Dataverse data available in Microsoft Copilot* allowed in the Power Platform admin center.
+- [ ] 🧪 **Tenant**: Microsoft 365 admin center → Copilot → Settings → *Business Applications data in Work IQ available to Copilot* (formerly *Dataverse data available in Microsoft Copilot*) → All users or the collections group. It was **None** in the demo tenant: no Copilot button in the app and `isM365CopilotEnabled()` = `false`, with every other switch on.
+- [ ] 🔧 **Power Platform admin center → Copilot → Settings → Power Apps → Chat agent → Microsoft Copilot** on for the environment; environment *Features*: *Copilot* and *Dataverse intelligence* on.
 - [ ] 🔧 **Environment**: **Dataverse search** on (an input to `isM365CopilotEnabled`).
 - [ ] 🧪 **App**: *Enable M365 Copilot in model-driven apps* can be set **per app**. It is the app setting `m365copilotmodelappenabled` = 1 (`deploy/app-settings.sh`). The setting row only shows up after a `PublishXml` of that app.
 - [ ] 🧪 **Default agent**: set in the app designer's **Agents** panel (preview). It is stored in the environment variable `ppn_M365CopilotDefaultAgent_<app unique name>` with a value like `T_<id>.declarativeAgent`. Move it with the solution (environment variable value per environment). `deploy/bind-pcf.mjs` reads it to set the control's `gptId`.
