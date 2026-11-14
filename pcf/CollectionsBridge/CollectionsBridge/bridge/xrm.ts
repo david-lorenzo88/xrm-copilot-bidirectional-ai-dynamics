@@ -23,6 +23,7 @@ export interface CopilotApi {
   sendPromptToM365Copilot(promptText: string, options?: SendPromptOptions): Promise<void> | void;
   updateContext(context: PowerAppsContent): Promise<void> | void;
   addActionHandler(actionId: string, handler: ActionHandler): void;
+  /** VERIFY: whether removal is by id only or by (id, handler); we pass both, which suits either. */
   removeActionHandler(actionId: string, handler?: ActionHandler): void;
   addDefaultActionHandlers?(): void;
   removeDefaultActionHandlers?(): void;

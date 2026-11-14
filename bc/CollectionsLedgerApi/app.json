@@ -1,0 +1,21 @@
+{
+  "id": "5b0d5c6e-2f7a-4d0b-9c61-3c9a2f1d7e10",
+  "name": "Contoso Collections Ledger API",
+  "publisher": "Contoso",
+  "version": "1.0.0.0",
+  "brief": "Read-only API page over Customer Ledger Entries for the Collections agent (via BC virtual tables).",
+  "description": "Exposes closed-at dates so payment behaviour can be analysed in Dataverse/MCP.",
+  "privacyStatement": "",
+  "EULA": "",
+  "help": "",
+  "url": "",
+  "logo": "",
+  "dependencies": [],
+  "screenshots": [],
+  "platform": "26.0.0.0",
+  "application": "26.0.0.0",
+  "idRanges": [{ "from": 50100, "to": 50149 }],
+  "resourceExposurePolicy": { "allowDebugging": true, "allowDownloadingSource": true, "includeSourceInSymbolFile": true },
+  "runtime": "15.0",
+  "features": ["NoImplicitWith"]
+}
