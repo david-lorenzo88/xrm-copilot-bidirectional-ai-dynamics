@@ -149,10 +149,17 @@ flowchart LR
     (`deploy/pcf-import.sh`) and bound it to the customer number on the form with the agent id
     (`deploy/bind-pcf.mjs`).
 
+### 11. Payment history on live data
+27. Compiled `bc/CollectionsLedgerApi` with the AL CLI against BC 29.1 ES symbols from Microsoft's public symbol
+    feeds (the environment's dev endpoint refused symbol downloads), installed it as a per-tenant extension through the
+    automation API and generated its virtual table `dyn365bc_customerledgerentry_ppn_collections_v1_0`
+    (`deploy/bc-extension.sh`).
+28. Fixed one more provider limit (OData `or` across different fields) and ran the MCP tool handlers against the live
+    tenant: Fabrikam's payment behaviour is *worsening* (recent 58 vs prior 29 days late, risk 82) and its EUR 48,500
+    invoice ranks first to call today. Redeployed the MCP server.
+
 ## Still open
 
 - End-to-end run of the three beats in the real app and Copilot pane; real screenshots for the deck.
-- Payment history (days late, trend) on live data needs the `/bc` customer ledger API page installed in BC and
-  its virtual table enabled; until then the analysis uses open invoices only.
 - Confirm in the tenant: whether `updateContext` reaches the declarative agent (the prompt carries the context too)
   and that widget actions reach the app's handlers.
