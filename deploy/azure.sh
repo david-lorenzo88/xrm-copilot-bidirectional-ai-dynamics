@@ -80,13 +80,13 @@ fi
 if [[ "$SUB_ID" == "<subscription-id>" ]]; then ACR_NAME=${ACR_NAME:-acrxrmcoll'<hash8(subscription/rg)>'}; else ACR_NAME=${ACR_NAME:-acrxrmcoll$(printf '%s' "${SUB_ID}/${RG}" | hash8)}; fi
 
 log "Resource providers"
-missing=()
+# Registering a provider is additive (it changes no existing resource) and is needed once per subscription.
 for ns in Microsoft.App Microsoft.OperationalInsights Microsoft.ContainerRegistry Microsoft.ManagedIdentity; do
-  state=$(query Registered az provider show -n "$ns" --query registrationState -o tsv)
-  [[ "$state" == Registered ]] || missing+=("$ns")
+  state=$(query NotRegistered az provider show -n "$ns" --query registrationState -o tsv)
+  if [[ "$state" == Registered ]]; then ok "$ns"; else
+    run az provider register -n "$ns" --wait -o none
+  fi
 done
-((${#missing[@]} == 0)) || die "Not registered in this subscription: ${missing[*]}. A subscription owner runs: $(for ns in "${missing[@]}"; do printf 'az provider register -n %s --wait; ' "$ns"; done)"
-ok "Microsoft.App, OperationalInsights, ContainerRegistry, ManagedIdentity"
 
 # ---------------------------------------------------------------- resource group
 log "Resource group ${RG} (${LOC})"
