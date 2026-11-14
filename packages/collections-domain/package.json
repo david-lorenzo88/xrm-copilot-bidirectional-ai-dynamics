@@ -14,7 +14,7 @@
     "fixtures:export": "tsx scripts/export-fixtures.ts"
   },
   "dependencies": {
-    "@collections/contract": "1.0.0"
+    "@collections/contract": "*"
   },
   "devDependencies": {
     "tsx": "^4.20.6"
