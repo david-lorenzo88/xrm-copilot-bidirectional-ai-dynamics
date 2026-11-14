@@ -34,6 +34,8 @@ export interface PrioritizeOptions {
 }
 
 export const DEFAULT_CRITICAL_SCORE = 65;
+/** Balance (in invoice currency) from which "Large balance" is called out. */
+export const LARGE_BALANCE = 10_000;
 
 /**
  * Ranks overdue invoices for today's chase list.
@@ -60,7 +62,7 @@ export function prioritizeWorklist(
     const reasons: string[] = [];
     if (inv.daysOverdue > 90) reasons.push("90+ days overdue");
     else if (inv.daysOverdue > 60) reasons.push("61–90 days overdue");
-    if (size >= 0.85) reasons.push("Large balance");
+    if (inv.remainingAmount >= LARGE_BALANCE) reasons.push("Large balance");
     if (b.riskLevel === "high") reasons.push("High-risk customer");
     if (b.trend === "worsening") reasons.push("Payment behaviour worsening");
     if (reasons.length === 0) reasons.push(`${inv.daysOverdue} days overdue`);

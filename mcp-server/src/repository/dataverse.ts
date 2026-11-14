@@ -1,0 +1,141 @@
+import { DashboardSpec, isNewerSpec } from "@collections/contract";
+import { BC_TABLES, LOCAL_TABLES, formatIsoDate, type Customer, type Invoice, type InvoiceStatus } from "@collections/domain";
+import { DataverseClient, DataverseError, FORMATTED, odataString, type Row } from "./dataverse-client";
+import type { CollectionsRepository, InvoiceQuery } from "./types";
+
+const CUS = BC_TABLES.customer;
+const INV = BC_TABLES.salesInvoice;
+const CLE = BC_TABLES.customerLedgerEntry;
+const DASH = LOCAL_TABLES.dashboard;
+
+const str = (row: Row, col: string) => (row[col] == null ? "" : String(row[col]));
+const num = (row: Row, col: string) => Number(row[col] ?? 0);
+const date = (row: Row, col: string) => str(row, col).slice(0, 10);
+
+/**
+ * BC virtual tables + local tables over the Dataverse Web API, as the signed-in
+ * user (OBO), so Dataverse security roles apply. Read-only towards BC: the only
+ * writes go to contoso_collectiondashboard.
+ */
+export class DataverseRepository implements CollectionsRepository {
+  readonly mode = "dataverse" as const;
+  private ledgerAvailable = true;
+
+  constructor(private readonly client: DataverseClient) {}
+
+  asOf(): string {
+    return formatIsoDate(new Date());
+  }
+
+  async listCustomers(): Promise<Customer[]> {
+    const c = CUS.columns;
+    const rows = await this.client.list(CUS.entitySet, `$select=${Object.values(c).join(",")}&$top=500`);
+    return rows.map(toCustomer);
+  }
+
+  async findCustomer({ customerNo, customerId }: { customerNo?: string; customerId?: string }): Promise<Customer | undefined> {
+    const c = CUS.columns;
+    if (customerId) {
+      const row = await this.client.get(CUS.entitySet, customerId, Object.values(c));
+      return row ? toCustomer(row) : undefined;
+    }
+    if (!customerNo) return undefined;
+    const filter = `${c.number} eq ${odataString(customerNo)} or startswith(${c.name},${odataString(customerNo)})`;
+    const rows = await this.client.list(CUS.entitySet, `$select=${Object.values(c).join(",")}&$filter=${encodeURIComponent(filter)}&$top=1`);
+    return rows[0] ? toCustomer(rows[0]) : undefined;
+  }
+
+  async listInvoices({ customerNos, openOnly, since }: InvoiceQuery): Promise<Invoice[]> {
+    const c = INV.columns;
+    const filters: string[] = [];
+    if (customerNos?.length) filters.push(`(${customerNos.map((n) => `${c.customerNumber} eq ${odataString(n)}`).join(" or ")})`);
+    if (openOnly) filters.push(`${c.remainingAmount} gt 0`);
+    if (since) filters.push(`${c.invoiceDate} ge ${since}`);
+    const query = `$select=${Object.values(c).join(",")}${filters.length ? `&$filter=${encodeURIComponent(filters.join(" and "))}` : ""}`;
+    const invoices = (await this.client.list(INV.entitySet, query)).map(toInvoice);
+    return openOnly ? invoices : this.attachClosedDates(invoices, customerNos, since);
+  }
+
+  /**
+   * Paid dates come from customer ledger entries (custom API page, see /bc).
+   * If that table isn't enabled the analysis degrades to open invoices only.
+   */
+  private async attachClosedDates(invoices: Invoice[], customerNos?: readonly string[], since?: string): Promise<Invoice[]> {
+    if (!this.ledgerAvailable) return invoices;
+    const c = CLE.columns;
+    const filters = [`${c.open} eq false`];
+    if (customerNos?.length) filters.push(`(${customerNos.map((n) => `${c.customerNumber} eq ${odataString(n)}`).join(" or ")})`);
+    if (since) filters.push(`${c.dueDate} ge ${since}`);
+    try {
+      const rows = await this.client.list(CLE.entitySet, `$select=${c.documentNo},${c.closedAtDate}&$filter=${encodeURIComponent(filters.join(" and "))}`);
+      const closed = new Map(rows.map((r) => [str(r, c.documentNo), date(r, c.closedAtDate)]));
+      return invoices.map((i) => (i.remainingAmount === 0 && closed.get(i.number) ? { ...i, closedDate: closed.get(i.number) } : i));
+    } catch (err) {
+      if (err instanceof DataverseError && (err.status === 404 || err.status === 400)) {
+        this.ledgerAvailable = false;
+        console.warn(`[dataverse] ${CLE.logicalName} unavailable; payment history limited to open invoices`);
+        return invoices;
+      }
+      throw err;
+    }
+  }
+
+  async getDashboard(id: string): Promise<DashboardSpec | undefined> {
+    const row = await this.client.get(DASH.entitySet, id, [DASH.columns.specJson, DASH.columns.version]);
+    if (!row) return undefined;
+    const parsed = DashboardSpec.safeParse(JSON.parse(str(row, DASH.columns.specJson) || "null"));
+    return parsed.success ? parsed.data : undefined;
+  }
+
+  async saveDashboard(spec: DashboardSpec): Promise<DashboardSpec> {
+    const current = await this.getDashboard(spec.id);
+    if (!isNewerSpec(spec, current)) return current!;
+    const c = DASH.columns;
+    await this.client.upsert(DASH.entitySet, spec.id, {
+      [c.name]: spec.title,
+      [c.specJson]: JSON.stringify(spec),
+      [c.version]: spec.version,
+      [c.customerNo]: spec.filters.customerNos?.length === 1 ? spec.filters.customerNos[0] : null,
+    });
+    return spec;
+  }
+}
+
+function toCustomer(row: Row): Customer {
+  const c = CUS.columns;
+  return {
+    id: str(row, c.id),
+    number: str(row, c.number),
+    name: str(row, c.name),
+    currency: str(row, c.currency) || "EUR",
+    paymentTermsDays: 30,
+    creditLimit: num(row, c.creditLimit),
+    salesperson: str(row, c.salesperson),
+    city: str(row, c.city) || undefined,
+  };
+}
+
+/** VERIFY: BC enum columns may surface as choice values; we prefer the formatted label. */
+function toStatus(row: Row): InvoiceStatus {
+  const label = String(row[`${INV.columns.status}${FORMATTED}`] ?? row[INV.columns.status] ?? "");
+  if (/paid/i.test(label)) return "Paid";
+  if (/cancel/i.test(label)) return "Canceled";
+  return "Open";
+}
+
+function toInvoice(row: Row): Invoice {
+  const c = INV.columns;
+  return {
+    id: str(row, c.id),
+    number: str(row, c.number),
+    customerId: str(row, c.customerId),
+    customerNumber: str(row, c.customerNumber),
+    customerName: str(row, c.customerName),
+    invoiceDate: date(row, c.invoiceDate),
+    dueDate: date(row, c.dueDate),
+    totalAmount: num(row, c.totalAmount),
+    remainingAmount: num(row, c.remainingAmount),
+    currency: str(row, c.currency) || "EUR",
+    status: toStatus(row),
+  };
+}
