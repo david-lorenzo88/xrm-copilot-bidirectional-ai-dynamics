@@ -79,6 +79,8 @@ const params = [
   `<viewName static="true" type="SingleLine.Text">Overdue invoices</viewName>`,
   // Demo date from deploy/tenant.env (DEMO_AS_OF); empty = the real date.
   ...(env.DEMO_AS_OF ? [`<asOfDate static="true" type="SingleLine.Text">${env.DEMO_AS_OF}</asOfDate>`] : []),
+  // Same scope as the MCP server (CUSTOMER_NUMBER_PREFIX), so the in-app dashboard matches the widget.
+  ...(env.CUSTOMER_NUMBER_PREFIX ? [`<customerNumberPrefix static="true" type="SingleLine.Text">${env.CUSTOMER_NUMBER_PREFIX}</customerNumberPrefix>`] : []),
 ].join("");
 const description =
   `<controlDescription forControl="${uniqueid}">` +

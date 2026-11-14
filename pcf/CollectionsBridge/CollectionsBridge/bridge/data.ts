@@ -46,7 +46,11 @@ const ACT = LOCAL_TABLES.action;
 const odata = (v: string) => `'${v.replace(/'/g, "''")}'`;
 
 export class WebApiDataService implements CollectionsDataService {
-  constructor(private readonly webApi: WebApiLike) {}
+  /** customerNumberPrefix scopes all-customer reads (dashboard) the same way as the MCP server. */
+  constructor(
+    private readonly webApi: WebApiLike,
+    private readonly options: { customerNumberPrefix?: string } = {},
+  ) {}
 
   async findCustomer(customerNo: string): Promise<Customer | undefined> {
     const c = CUS.columns;
@@ -55,7 +59,7 @@ export class WebApiDataService implements CollectionsDataService {
   }
 
   openInvoices(customerNos?: readonly string[]): Promise<Invoice[]> {
-    return this.runFetchXml(buildOpenInvoicesFetchXml(customerNos));
+    return this.runFetchXml(buildOpenInvoicesFetchXml(customerNos, this.options.customerNumberPrefix));
   }
 
   async runFetchXml(fetchXml: string): Promise<Invoice[]> {
@@ -64,7 +68,9 @@ export class WebApiDataService implements CollectionsDataService {
   }
 
   async listCustomers(): Promise<Customer[]> {
-    const res = await this.webApi.retrieveMultipleRecords(CUS.logicalName, `?$select=${Object.values(CUS.columns).join(",")}`, 500);
+    const prefix = this.options.customerNumberPrefix;
+    const filter = prefix ? `&$filter=startswith(${CUS.columns.number},${odata(prefix)})` : "";
+    const res = await this.webApi.retrieveMultipleRecords(CUS.logicalName, `?$select=${Object.values(CUS.columns).join(",")}${filter}`, 500);
     return res.entities.map(rowToCustomer);
   }
 

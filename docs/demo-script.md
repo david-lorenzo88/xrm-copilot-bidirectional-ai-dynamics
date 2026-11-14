@@ -34,6 +34,8 @@ Screenshots in `docs/img/` come from the mock host (fixture numbers such as SI-1
 - [ ] One throwaway prompt to the agent from the app (any customer), so SSO consent and the token are cached.
 - [ ] No old Fabrikam dashboard: delete Fabrikam rows in *Collection dashboards*, or accept that Beat 3 starts at a higher version.
 - [ ] Side panes from the rehearsal closed.
+- [ ] The pane is open on **Collections**. Don't use **+** (new chat) on stage: a new chat starts on plain Copilot, without
+      the default agent. For a clean chat, close the pane (**X**) and reopen it with **Copilot** in the header.
 - [ ] Mock fallback running in a second browser tab: `npm run demo` → http://localhost:5173.
 - [ ] Recorded video of each beat on the desktop.
 - [ ] Notifications off, browser zoom 110–125 %, Copilot pane width so the widget shows the whole table.

@@ -54,6 +54,12 @@
   <data name="asOfDate_Desc_Key" xml:space="preserve">
     <value>Optional YYYY-MM-DD used as today for ageing (rehearsals). Empty = the real date.</value>
   </data>
+  <data name="customerNumberPrefix_Display_Key" xml:space="preserve">
+    <value>Customer number prefix</value>
+  </data>
+  <data name="customerNumberPrefix_Desc_Key" xml:space="preserve">
+    <value>Optional. Limits all-customer views (dashboard) to customer numbers starting with this, e.g. DEMO-C-. Same as the MCP server's CUSTOMER_NUMBER_PREFIX.</value>
+  </data>
   <data name="worklistViewId_Display_Key" xml:space="preserve">
     <value>Worklist view id</value>
   </data>

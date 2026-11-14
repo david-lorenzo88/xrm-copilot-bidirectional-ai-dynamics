@@ -20,7 +20,7 @@ export class CollectionsBridge implements ComponentFramework.ReactControl<IInput
       copilot: getCopilot(xrm), // undefined → graceful degradation
       sidePanes: xrm?.App?.sidePanes,
       navigation: xrm?.Navigation,
-      data: new WebApiDataService(context.webAPI as unknown as WebApiLike),
+      data: new WebApiDataService(context.webAPI as unknown as WebApiLike, { customerNumberPrefix: p.customerNumberPrefix?.raw || undefined }),
       today: () => resolveAsOf(p.asOfDate?.raw),
       settings: {
         ...DEFAULT_SETTINGS,

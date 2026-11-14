@@ -39,10 +39,13 @@ export function buildOverdueInvoicesFetchXml({ asOf, customerNo, minDaysOverdue 
 }
 
 /** All open invoices (current + overdue), optionally for a set of customers. Feeds the dashboard. */
-export function buildOpenInvoicesFetchXml(customerNos?: readonly string[]): string {
+/** customerNumberPrefix (e.g. "DEMO-C-") scopes an all-customers query, as the MCP server does. */
+export function buildOpenInvoicesFetchXml(customerNos?: readonly string[], customerNumberPrefix?: string): string {
   const conditions = [OPEN()];
   if (customerNos?.length) {
     conditions.push(`<condition attribute="${C.customerNumber}" operator="in">${customerNos.map((n) => `<value>${escapeXml(n)}</value>`).join("")}</condition>`);
+  } else if (customerNumberPrefix) {
+    conditions.push(`<condition attribute="${C.customerNumber}" operator="like" value="${escapeXml(customerNumberPrefix)}%" />`);
   }
   return fetch(conditions, [`<order attribute="${C.customerNumber}"/>`]);
 }
