@@ -46,6 +46,13 @@ resource group tagged `project=xrm-copilot-collections`, and the app registratio
 | 6 | Agent | `node deploy/agent.mjs --dry-run`, then without | Device-code sign-in (works from a remote container, unlike the Agents Toolkit CLI's browser sign-in). Creates the Entra SSO registration in the Teams Developer Portal, adds its Application ID URI and the token-store pre-authorization to the app registration, makes the MCP server accept that audience, builds and imports the package, and uploads it to Microsoft 365. Tenant values go to the git-ignored `agent/env/.env.dev.local` |
 | 7 | Admin consent | `az ad app permission admin-consent --id <AZURE_CLIENT_ID>` (tenant admin) | Dataverse `user_impersonation` for the OBO exchange |
 
+### Demo date (rehearsals)
+
+`DEMO_AS_OF=2026-11-27` in `deploy/tenant.env` makes the MCP server (`azure.sh`) and the PCF (`bind-pcf.mjs`,
+`asOfDate` property) age invoices as of the session day, so rehearsals show the same numbers as the talk
+(Fabrikam: EUR 48,500 at 100 days, 90+). Set it empty and re-run both scripts to go back to the real date.
+The platform's *Overdue invoices* view (`olderthan-x-days`) always uses the real date.
+
 ### BC virtual tables: limits found in the demo tenant
 
 - Any FetchXML `top` attribute makes the provider return a single row: never use `top` (OData `$top` is fine).
