@@ -26,7 +26,7 @@ Screenshots in `docs/img/` come from the mock host (fixture numbers such as SI-1
 
 - [ ] Signed in as the demo user (M365 Copilot licence). Collections Workspace open on the sitemap, Copilot pane closed.
 - [ ] Open Fabrikam once in the last 30 minutes, so the `isM365CopilotEnabled()` cache is warm, and close it again.
-- [ ] MCP server warm (Container Apps can scale to zero):
+- [ ] MCP server healthy (it runs with min replicas 1, so no cold start):
   ```bash
   curl -s "$(grep ^PUBLIC_BASE_URL deploy/outputs.env | cut -d= -f2)/healthz"
   ```

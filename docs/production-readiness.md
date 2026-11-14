@@ -57,7 +57,7 @@ the week before you ship, and date-stamp it.
 - [ ] ✅ **postMessage hygiene**: accept messages only from known widget windows; widgets build messages through `createChatActionMessage` (validated).
 - [ ] ✅ No secrets in the repository: `.env*`, `deploy/tenant.env`, `deploy/outputs.env` and `agent/.env.dev.local` are git-ignored; only examples and placeholders are tracked.
 - [ ] ⚠️ **Widget sandbox**: widgets render on `{sha256(mcp-domain)}.widget-renderer.usercontent.microsoft.com`. Ours make no network calls (empty CSP). If you add fetches, declare `connectDomains` and set CORS for that origin.
-- [ ] 🔧 Container Apps: HTTPS only, min replicas ≥ 1 for the session (cold starts), ingress restricted if possible, image scanning on ACR.
+- [ ] 🔧 Container Apps: HTTPS only, min replicas ≥ 1 (set by `azure.sh`, no cold starts), ingress restricted if possible, image scanning on ACR.
 - [ ] ⚠️ `pcf-scripts` pulls an `applicationinsights` version with moderate `npm audit` advisories (build-time only, upstream). Track the next pcf-scripts release.
 
 ## ALM
