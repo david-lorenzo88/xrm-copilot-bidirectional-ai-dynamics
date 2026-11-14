@@ -1,0 +1,17 @@
+{
+  "name": "@collections/contract",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Versioned bridge contract between the model-driven app, the declarative agent and the MCP Apps widgets.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  }
+}

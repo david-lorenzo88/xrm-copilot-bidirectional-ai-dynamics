@@ -1,0 +1,36 @@
+{
+  "name": "collections-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Collections Workspace: a model-driven app over Business Central virtual tables, bridged to Microsoft 365 Copilot via Xrm.Copilot, a declarative agent and an MCP Apps server.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/contract",
+    "packages/collections-domain",
+    "packages/collections-ui",
+    "mcp-server",
+    "mock",
+    "pcf/CollectionsBridge"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build -w mcp-server && npm run build -w mock && npm run build -w pcf/CollectionsBridge",
+    "build:widgets": "npm run build:widgets -w mcp-server",
+    "dev:server": "npm run dev -w mcp-server",
+    "demo": "npm run build:widgets && npm run dev -w mock",
+    "demo:http": "npm run build:widgets && concurrently -k -n mcp,host \"npm run dev -w mcp-server\" \"npm run dev -w mock\"",
+    "fixtures:export": "npm run fixtures:export -w packages/collections-domain",
+    "ci": "npm run typecheck && npm run test && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "concurrently": "^9.2.1",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.12",
+    "@vitest/coverage-v8": "^4.1.12"
+  }
+}
