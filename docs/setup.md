@@ -51,6 +51,8 @@ resource group tagged `project=xrm-copilot-collections`, and the app registratio
 - Any FetchXML `top` attribute makes the provider return a single row: never use `top` (OData `$top` is fine).
 - `remainingAmount` can't be filtered or used for ordering: filter on `status` = Open (choice value 200000003).
 - `olderthan-x-days` needs a value of at least 1.
+- OData `or` across different fields is rejected (`or` on the same field is fine): query them separately.
+- Custom API pages are named `<entity>_<publisher>_<group>_<version>` in the catalog.
 - Tables appear only after the catalog row is made visible (`dyn365bc_businesscentralentities.dyn365bc_hasbeengenerated = true`).
 - The standard catalog has no customer ledger entries: payment history (days late, trend) needs the `/bc` custom API page.
 - CRONUS ES has its own customers with the same names as the fixtures: `CUSTOMER_NUMBER_PREFIX=DEMO-C-` and the view filters scope the demo.

@@ -49,9 +49,13 @@ export class DataverseRepository implements CollectionsRepository {
       return row ? rowToCustomer(row) : undefined;
     }
     if (!customerNo) return undefined;
-    const filter = `${c.number} eq ${odataString(customerNo)} or startswith(${c.name},${odataString(customerNo)})`;
-    const rows = await this.client.list(CUS.entitySet, `$select=${Object.values(c).join(",")}&$filter=${encodeURIComponent(filter)}&$top=1`);
-    return rows[0] ? rowToCustomer(rows[0]) : undefined;
+    // The BC virtual table rejects OR across different fields: match the number first, then a name prefix.
+    const select = `$select=${Object.values(c).join(",")}`;
+    for (const filter of [`${c.number} eq ${odataString(customerNo)}`, [`startswith(${c.name},${odataString(customerNo)})`, ...this.scope(c.number)].join(" and ")]) {
+      const rows = await this.client.list(CUS.entitySet, `${select}&$filter=${encodeURIComponent(filter)}&$top=1`);
+      if (rows[0]) return rowToCustomer(rows[0]);
+    }
+    return undefined;
   }
 
   async listInvoices({ customerNos, openOnly, since }: InvoiceQuery): Promise<Invoice[]> {
