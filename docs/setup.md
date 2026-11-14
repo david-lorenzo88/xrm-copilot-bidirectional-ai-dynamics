@@ -25,6 +25,22 @@ npm run ci            # typecheck + tests + builds (MCP server + widgets, mock, 
 npm run demo          # sanity check the offline demo at http://localhost:5173
 ```
 
+## Scripted path (`deploy/`)
+
+The scripts below automate sections 2 to 5. Fill in `deploy/tenant.env` first (copy `deploy/tenant.env.example`; no secrets).
+Every script has `--dry-run`, which prints each command and request without sending it and works before you sign in.
+The scripts only create what is missing. They change only what they created: the `DEMO-` records in BC, the
+resource group tagged `project=xrm-copilot-collections`, and the app registration with that tag. Re-run a script to resume it.
+
+| # | Step | Command | Notes |
+|---|---|---|---|
+| 1 | Sign in | `az login --tenant <tenant-id>` · `pac auth create --environment <DATAVERSE_URL>` | Same maker account for both. It needs BC permissions and Azure Owner (or Contributor + User Access Administrator) |
+| 2 | Seed Business Central | `node deploy/bc-seed.mjs --dry-run`, then without `--dry-run` | Uses the fixtures from section 2.5 (Fabrikam is the hero). Dates are aligned to `--as-of` (default 2026-11-27). Creates customers `DEMO-C-1001…`, posts invoices (external doc. no. `DEMO-SI-…`) and their payments (journal batch `DEMOPAY`). If BC asks for posting groups or allowed posting dates, the script explains what to change |
+| 3 | Link BC ↔ Dataverse | manual, sections 2.1 to 2.4 | Install the virtual tables and run *Set up a connection to Dataverse*. Make `customer`/`salesInvoice` (and the ledger API from `/bc`) visible |
+| 4 | Dataverse | `deploy/dataverse.sh --dry-run`, then without `--dry-run` | Checks that `pac` is on `DATAVERSE_URL`. Reuses the `ppn` publisher (`PowerPlatformNinja` first), creates solution `CollectionsWorkspace` and pushes the PCF into it. It prints the publisher the app-builder App Spec must use. `--tables` is the fallback that creates the two `ppn_` tables with `create-tables.mjs` |
+| 5 | Azure + Entra | `deploy/azure.sh --dry-run`, then without `--dry-run` | Registers the resource providers. Creates the resource group, Log Analytics, the Container Apps environment, ACR (`az acr build` from the repository root), the managed identity and the Container App. Also creates the app registration `xrm-copilot-collections-mcp` (`access_as_user`, Dataverse `user_impersonation`, federated credential, Teams SSO redirect URIs). Writes `deploy/outputs.env`. Admin consent is **not** granted: an admin runs the printed URL or command |
+| 6 | Agent | section 4.4 (Teams Developer Portal SSO registration), then section 6 | Use `MCP_SERVER_URL` and `AZURE_CLIENT_ID` from `deploy/outputs.env` |
+
 ## 2. Business Central virtual tables
 
 1. In the Power Platform admin center, install **Business Central Virtual Table** (AppSource) into the environment.

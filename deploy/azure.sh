@@ -15,7 +15,8 @@
 # overrides there or in the environment: ACR_NAME, LAW_NAME, CAE_NAME, MI_NAME, CA_NAME, IMAGE_TAG,
 # MCP_APP_DISPLAY_NAME.
 #
-# Safety: everything is create-if-missing. The resource group must be new or already tagged
+# Safety: everything is create-if-missing. Registers the Microsoft.App, OperationalInsights, ContainerRegistry
+# and ManagedIdentity resource providers if needed (additive, subscription-wide, waits). The resource group must be new or already tagged
 # project=xrm-copilot-collections; the Entra app is only changed if it carries the same tag (this
 # script sets it at creation). Admin consent is NOT granted; the command is printed. No secrets:
 # the Container App reaches Dataverse through a user-assigned managed identity that is a federated
@@ -29,7 +30,7 @@ for arg in "$@"; do
     --dry-run) DRY_RUN=1 ;;
     --rebuild) REBUILD=1 ;;
     --skip-build) SKIP_BUILD=1 ;;
-    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,/^set -euo/p' "$0" | sed '$d'; exit 0 ;;
     *) die "Unknown option $arg (see --help)" ;;
   esac
 done

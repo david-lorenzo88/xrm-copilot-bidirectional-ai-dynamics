@@ -38,7 +38,7 @@ while (($#)); do
     --tables) WITH_TABLES=1 ;;
     --pcf) PCF_MODE=${2:-}; shift ;;
     --pcf=*) PCF_MODE=${1#--pcf=} ;;
-    -h|--help) sed -n '2,29p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,/^set -euo/p' "$0" | sed '$d'; exit 0 ;;
     *) die "Unknown option $1 (see --help)" ;;
   esac
   shift
