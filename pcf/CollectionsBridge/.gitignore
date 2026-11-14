@@ -1,0 +1,5 @@
+# pcf-scripts output
+generated/
+out/
+obj/
+bin/

@@ -95,3 +95,32 @@ export function prioritizeWorklist(
     };
   });
 }
+
+/**
+ * Builds worklist rows for invoices in an order someone else decided (the agent's
+ * ShowWorklist payload). Used in-app, where the full scoring inputs aren't loaded:
+ * rank follows `order`, the rest is derived from aging.
+ */
+export function rankedWorklist(invoices: readonly Invoice[], order: readonly string[], asOf: string): WorklistItem[] {
+  const position = new Map(order.map((id, i) => [id, i]));
+  return ageInvoices(invoices, asOf)
+    .sort((a, b) => (position.get(a.id) ?? Infinity) - (position.get(b.id) ?? Infinity) || b.daysOverdue - a.daysOverdue)
+    .map((inv, idx) => ({
+      rank: idx + 1,
+      invoiceId: inv.id,
+      invoiceNo: inv.number,
+      customerId: inv.customerId,
+      customerNo: inv.customerNumber,
+      customerName: inv.customerName,
+      dueDate: inv.dueDate,
+      daysOverdue: inv.daysOverdue,
+      bucketId: inv.bucketId,
+      remainingAmount: round2(inv.remainingAmount),
+      currency: inv.currency,
+      customerRiskScore: 0,
+      score: 0,
+      critical: false,
+      suggestedAction: inv.daysOverdue > 60 ? "Call today" : inv.daysOverdue > 0 ? "Send reminder" : "Monitor",
+      reasons: [inv.daysOverdue > 90 ? "90+ days overdue" : `${inv.daysOverdue} days overdue`],
+    }));
+}

@@ -1,6 +1,6 @@
 import { DashboardSpec, isNewerSpec } from "@collections/contract";
-import { BC_TABLES, LOCAL_TABLES, formatIsoDate, type Customer, type Invoice, type InvoiceStatus } from "@collections/domain";
-import { DataverseClient, DataverseError, FORMATTED, odataString, type Row } from "./dataverse-client";
+import { BC_TABLES, LOCAL_TABLES, formatIsoDate, rowToCustomer, rowToInvoice, type Customer, type Invoice } from "@collections/domain";
+import { DataverseClient, DataverseError, odataString, type Row } from "./dataverse-client";
 import type { CollectionsRepository, InvoiceQuery } from "./types";
 
 const CUS = BC_TABLES.customer;
@@ -9,7 +9,6 @@ const CLE = BC_TABLES.customerLedgerEntry;
 const DASH = LOCAL_TABLES.dashboard;
 
 const str = (row: Row, col: string) => (row[col] == null ? "" : String(row[col]));
-const num = (row: Row, col: string) => Number(row[col] ?? 0);
 const date = (row: Row, col: string) => str(row, col).slice(0, 10);
 
 /**
@@ -30,19 +29,19 @@ export class DataverseRepository implements CollectionsRepository {
   async listCustomers(): Promise<Customer[]> {
     const c = CUS.columns;
     const rows = await this.client.list(CUS.entitySet, `$select=${Object.values(c).join(",")}&$top=500`);
-    return rows.map(toCustomer);
+    return rows.map(rowToCustomer);
   }
 
   async findCustomer({ customerNo, customerId }: { customerNo?: string; customerId?: string }): Promise<Customer | undefined> {
     const c = CUS.columns;
     if (customerId) {
       const row = await this.client.get(CUS.entitySet, customerId, Object.values(c));
-      return row ? toCustomer(row) : undefined;
+      return row ? rowToCustomer(row) : undefined;
     }
     if (!customerNo) return undefined;
     const filter = `${c.number} eq ${odataString(customerNo)} or startswith(${c.name},${odataString(customerNo)})`;
     const rows = await this.client.list(CUS.entitySet, `$select=${Object.values(c).join(",")}&$filter=${encodeURIComponent(filter)}&$top=1`);
-    return rows[0] ? toCustomer(rows[0]) : undefined;
+    return rows[0] ? rowToCustomer(rows[0]) : undefined;
   }
 
   async listInvoices({ customerNos, openOnly, since }: InvoiceQuery): Promise<Invoice[]> {
@@ -52,7 +51,7 @@ export class DataverseRepository implements CollectionsRepository {
     if (openOnly) filters.push(`${c.remainingAmount} gt 0`);
     if (since) filters.push(`${c.invoiceDate} ge ${since}`);
     const query = `$select=${Object.values(c).join(",")}${filters.length ? `&$filter=${encodeURIComponent(filters.join(" and "))}` : ""}`;
-    const invoices = (await this.client.list(INV.entitySet, query)).map(toInvoice);
+    const invoices = (await this.client.list(INV.entitySet, query)).map(rowToInvoice);
     return openOnly ? invoices : this.attachClosedDates(invoices, customerNos, since);
   }
 
@@ -99,43 +98,4 @@ export class DataverseRepository implements CollectionsRepository {
     });
     return spec;
   }
-}
-
-function toCustomer(row: Row): Customer {
-  const c = CUS.columns;
-  return {
-    id: str(row, c.id),
-    number: str(row, c.number),
-    name: str(row, c.name),
-    currency: str(row, c.currency) || "EUR",
-    paymentTermsDays: 30,
-    creditLimit: num(row, c.creditLimit),
-    salesperson: str(row, c.salesperson),
-    city: str(row, c.city) || undefined,
-  };
-}
-
-/** VERIFY: BC enum columns may surface as choice values; we prefer the formatted label. */
-function toStatus(row: Row): InvoiceStatus {
-  const label = String(row[`${INV.columns.status}${FORMATTED}`] ?? row[INV.columns.status] ?? "");
-  if (/paid/i.test(label)) return "Paid";
-  if (/cancel/i.test(label)) return "Canceled";
-  return "Open";
-}
-
-function toInvoice(row: Row): Invoice {
-  const c = INV.columns;
-  return {
-    id: str(row, c.id),
-    number: str(row, c.number),
-    customerId: str(row, c.customerId),
-    customerNumber: str(row, c.customerNumber),
-    customerName: str(row, c.customerName),
-    invoiceDate: date(row, c.invoiceDate),
-    dueDate: date(row, c.dueDate),
-    totalAmount: num(row, c.totalAmount),
-    remainingAmount: num(row, c.remainingAmount),
-    currency: str(row, c.currency) || "EUR",
-    status: toStatus(row),
-  };
 }

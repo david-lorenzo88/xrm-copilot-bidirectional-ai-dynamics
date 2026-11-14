@@ -1,5 +1,41 @@
 {
   "name": "@collections/pcf-bridge",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "description": "CollectionsBridge PCF (React virtual control): publishes app context to M365 Copilot and handles agent actions.",
+  "exports": {
+    "./bridge": "./CollectionsBridge/bridge/index.ts",
+    "./app": "./CollectionsBridge/components/CollectionsBridgeApp.tsx",
+    "./testing": "./CollectionsBridge/testing/fixture-data.ts"
+  },
+  "scripts": {
+    "build": "pcf-scripts build",
+    "build:prod": "pcf-scripts build --buildMode production",
+    "clean": "pcf-scripts clean",
+    "rebuild": "pcf-scripts rebuild",
+    "refreshTypes": "pcf-scripts refreshTypes",
+    "start": "pcf-scripts start",
+    "start:watch": "pcf-scripts start watch",
+    "typecheck": "pcf-scripts refreshTypes && tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@collections/contract": "*",
+    "@collections/domain": "*",
+    "@collections/ui": "*"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@fluentui/react-components": "^9.72.0",
+    "@microsoft/eslint-plugin-power-apps": "^0.5.1",
+    "@types/powerapps-component-framework": "^1.3.18",
+    "@types/react": "^18.3.26",
+    "eslint": "^9.39.0",
+    "globals": "^17.0.0",
+    "pcf-scripts": "^1.51.1",
+    "pcf-start": "^1.51.1",
+    "react": "^18.3.1",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.72.0"
+  }
 }

@@ -6,3 +6,4 @@ export * from "./prioritize";
 export * from "./schema";
 export * from "./fetchxml";
 export * from "./dashboard-data";
+export * from "./dataverse-mapping";

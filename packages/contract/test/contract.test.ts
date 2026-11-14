@@ -128,12 +128,13 @@ describe("dashboard spec", () => {
     expect(DashboardSpec.safeParse({ ...base, groupBy: ["customer", "customer"] }).success).toBe(false);
   });
 
-  it("patches, bumps version and merges filters", () => {
+  it("patches, bumps version and replaces filters", () => {
     const spec = createDashboardSpec({ id: ID1, now, filters: { minAmount: 100 } });
     const next = applyDashboardPatch(spec, { filters: { bucketIds: ["61-90", "90+"] } }, "app", new Date("2026-11-27T10:00:00Z"));
     expect(next.version).toBe(2);
     expect(next.updatedBy).toBe("app");
-    expect(next.filters).toEqual({ minAmount: 100, bucketIds: ["61-90", "90+"] });
+    expect(next.filters).toEqual({ bucketIds: ["61-90", "90+"] });
+    expect(applyDashboardPatch(next, { title: "t" }, "agent").filters).toEqual(next.filters);
     expect(isNewerSpec(next, spec)).toBe(true);
     expect(isNewerSpec(spec, next)).toBe(false);
     expect(isNewerSpec(spec, undefined)).toBe(true);

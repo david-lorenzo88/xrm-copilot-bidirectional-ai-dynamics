@@ -21,8 +21,6 @@ export class DataverseError extends Error {
 
 export type Row = Record<string, unknown>;
 
-export const FORMATTED = "@OData.Community.Display.V1.FormattedValue";
-
 export class DataverseClient {
   private readonly base: string;
   private readonly fetchImpl: typeof fetch;

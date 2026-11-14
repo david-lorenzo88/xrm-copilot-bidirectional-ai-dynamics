@@ -108,7 +108,10 @@ export function createDashboardSpec(input: NewDashboardInput): DashboardSpec {
 
 export type DashboardPatch = Partial<Pick<DashboardSpec, "title" | "groupBy" | "measures" | "filters" | "buckets" | "visual">>;
 
-/** Applies a patch, bumps the version and re-validates. */
+/**
+ * Applies a patch, bumps the version and re-validates.
+ * `filters` replaces the whole filter set (so a filter can be cleared by omitting it).
+ */
 export function applyDashboardPatch(
   spec: DashboardSpec,
   patch: DashboardPatch,
@@ -118,7 +121,6 @@ export function applyDashboardPatch(
   return DashboardSpec.parse({
     ...spec,
     ...patch,
-    filters: patch.filters ? { ...spec.filters, ...patch.filters } : spec.filters,
     version: spec.version + 1,
     updatedAt: now.toISOString(),
     updatedBy,

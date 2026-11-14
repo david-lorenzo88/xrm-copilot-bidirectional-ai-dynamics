@@ -6,6 +6,7 @@ import {
   type CollectionsContext,
   type DashboardPatch,
   type DashboardSpec,
+  type NewDashboardInput,
   type OpenInvoicesPayload,
   type ShowWorklistPayload,
 } from "@collections/contract";
@@ -126,17 +127,15 @@ async function withData(repo: CollectionsRepository, spec: DashboardSpec): Promi
   return { spec, data: buildDashboardData(spec, customers, invoices, spec.asOf ?? repo.asOf()) };
 }
 
-export type BuildDashboardArgs = Pick<NonNullable<Parameters<typeof createDashboardSpec>[0]>, "title" | "groupBy" | "measures" | "filters" | "visual"> & {
-  dashboardId?: string;
-};
+export type BuildDashboardArgs = Pick<NewDashboardInput, "title" | "groupBy" | "measures" | "filters" | "visual"> & { dashboardId?: string };
 
-export async function buildDashboard(repo: CollectionsRepository, args: BuildDashboardArgs): Promise<DashboardResult> {
-  const id = args.dashboardId ?? crypto.randomUUID();
-  const existing = args.dashboardId ? await repo.getDashboard(args.dashboardId) : undefined;
+export async function buildDashboard(repo: CollectionsRepository, { dashboardId, ...input }: BuildDashboardArgs): Promise<DashboardResult> {
+  const patch = stripUndefined(input);
+  const existing = dashboardId ? await repo.getDashboard(dashboardId) : undefined;
   const spec = existing
-    ? applyDashboardPatch(existing, { title: args.title, groupBy: args.groupBy, measures: args.measures, filters: args.filters ?? {}, visual: args.visual }, "agent")
-    : createDashboardSpec({ id, title: args.title, groupBy: args.groupBy, measures: args.measures, filters: args.filters, visual: args.visual, updatedBy: "agent" });
-  return withData(repo, await repo.saveDashboard(stripUndefined(spec)));
+    ? applyDashboardPatch(existing, patch, "agent")
+    : createDashboardSpec({ id: dashboardId ?? crypto.randomUUID(), ...patch, updatedBy: "agent" });
+  return withData(repo, await repo.saveDashboard(spec));
 }
 
 export async function getDashboard(repo: CollectionsRepository, dashboardId: string): Promise<DashboardResult> {
