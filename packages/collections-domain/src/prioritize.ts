@@ -101,7 +101,12 @@ export function prioritizeWorklist(
  * ShowWorklist payload). Used in-app, where the full scoring inputs aren't loaded:
  * rank follows `order`, the rest is derived from aging.
  */
-export function rankedWorklist(invoices: readonly Invoice[], order: readonly string[], asOf: string): WorklistItem[] {
+export function rankedWorklist(
+  invoices: readonly Invoice[],
+  order: readonly string[],
+  asOf: string,
+  suggested: readonly SuggestedAction[] = [],
+): WorklistItem[] {
   const position = new Map(order.map((id, i) => [id, i]));
   return ageInvoices(invoices, asOf)
     .sort((a, b) => (position.get(a.id) ?? Infinity) - (position.get(b.id) ?? Infinity) || b.daysOverdue - a.daysOverdue)
@@ -120,7 +125,7 @@ export function rankedWorklist(invoices: readonly Invoice[], order: readonly str
       customerRiskScore: 0,
       score: 0,
       critical: false,
-      suggestedAction: inv.daysOverdue > 60 ? "Call today" : inv.daysOverdue > 0 ? "Send reminder" : "Monitor",
+      suggestedAction: suggested[position.get(inv.id) ?? -1] ?? (inv.daysOverdue > 60 ? "Call today" : inv.daysOverdue > 0 ? "Send reminder" : "Monitor"),
       reasons: [inv.daysOverdue > 90 ? "90+ days overdue" : `${inv.daysOverdue} days overdue`],
     }));
 }

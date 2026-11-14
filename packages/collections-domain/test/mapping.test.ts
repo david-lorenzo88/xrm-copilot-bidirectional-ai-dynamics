@@ -34,3 +34,13 @@ describe("rankedWorklist", () => {
     expect(rankedWorklist([current], [], FIXTURE_AS_OF)[0]).toMatchObject({ suggestedAction: "Monitor" });
   });
 });
+
+describe("rankedWorklist with the agent's next steps", () => {
+  it("uses the agent's suggested action for each ranked invoice", () => {
+    const open = fixtures.invoices.filter((i) => i.customerNumber === "C-1001" && i.remainingAmount > 0 && i.dueDate < FIXTURE_AS_OF);
+    const order = open.slice(0, 2).map((i) => i.id);
+    const items = rankedWorklist(open, order, FIXTURE_AS_OF, ["Monitor", "Call today"]);
+    expect(items[0]).toMatchObject({ invoiceId: order[0], suggestedAction: "Monitor" });
+    expect(items[1]).toMatchObject({ invoiceId: order[1], suggestedAction: "Call today" });
+  });
+});

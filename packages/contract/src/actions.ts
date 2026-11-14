@@ -39,6 +39,8 @@ export const ShowWorklistPayload = z.object({
   fetchXml: FetchXml,
   /** Priority order (FetchXML can't express an arbitrary order). */
   invoiceIds: z.array(RecordId).max(50).optional(),
+  /** The agent's next step per invoice, same order as invoiceIds, so the app shows the same advice as the widget. */
+  suggestedActions: z.array(z.enum(["Call today", "Send reminder", "Monitor"])).max(50).optional(),
 });
 
 export const RenderDashboardPayload = z

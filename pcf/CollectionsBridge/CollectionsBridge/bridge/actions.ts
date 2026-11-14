@@ -30,7 +30,7 @@ export async function openInvoicesInSidePanes(sidePanes: SidePanes, { invoiceIds
  */
 export async function loadWorklist(data: CollectionsDataService, payload: ShowWorklistPayload, asOf: string): Promise<{ title: string; items: WorklistItem[] }> {
   const invoices = await data.runFetchXml(payload.fetchXml);
-  return { title: payload.title, items: rankedWorklist(invoices, payload.invoiceIds ?? [], asOf) };
+  return { title: payload.title, items: rankedWorklist(invoices, payload.invoiceIds ?? [], asOf, payload.suggestedActions) };
 }
 
 /**

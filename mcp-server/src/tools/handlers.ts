@@ -108,7 +108,7 @@ export async function prioritize(
         ? { contractVersion: CONTRACT_VERSION, invoiceIds: critical.map((i) => i.invoiceId), invoiceNumbers: critical.map((i) => i.invoiceNo) }
         : null,
       showWorklist: items.length
-        ? { contractVersion: CONTRACT_VERSION, title, fetchXml: buildPrioritizedWorklistFetchXml(items.map((i) => i.invoiceId)), invoiceIds: items.map((i) => i.invoiceId) }
+        ? { contractVersion: CONTRACT_VERSION, title, fetchXml: buildPrioritizedWorklistFetchXml(items.map((i) => i.invoiceId)), invoiceIds: items.map((i) => i.invoiceId), suggestedActions: items.map((i) => i.suggestedAction) }
         : null,
     },
     autoApply: args.applyInApp ?? true,
