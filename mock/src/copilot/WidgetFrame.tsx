@@ -35,7 +35,7 @@ export function WidgetFrame({ client, resourceUri, args, result, onUserMessage, 
       void bridge.sendToolInput({ arguments: args });
       void bridge.sendToolResult(result);
     };
-    bridge.onsizechange = ({ height: h }) => h && setHeight(Math.min(Math.max(h, 120), 900));
+    bridge.onsizechange = ({ height: h }) => h && setHeight(Math.min(Math.max(h, 120), 1600));
     bridge.onmessage = async ({ content }) => {
       onUserMessage(content.map((c) => (c.type === "text" ? c.text : "")).join(" "));
       return {};

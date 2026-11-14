@@ -61,6 +61,7 @@ export interface BridgeState {
 
 export interface CollectionsBridge {
   store: Store<BridgeState>;
+  settings: BridgeSettings;
   setRecord(record: RecordInfo): Promise<void>;
   analyze(): Promise<void>;
   changeDashboardFilters(filters: DashboardFilters): Promise<void>;
@@ -162,6 +163,7 @@ export function createCollectionsBridge(deps: BridgeDeps): CollectionsBridge {
 
   return {
     store,
+    settings,
     async setRecord(record) {
       const current = store.get().record;
       if (current?.customerNo === record.customerNo && current?.recordId === record.recordId) return;

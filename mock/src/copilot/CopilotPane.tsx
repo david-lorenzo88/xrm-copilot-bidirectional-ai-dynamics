@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Badge, Button, Caption1, Card, Input, Spinner, Text, makeStyles, tokens } from "@fluentui/react-components";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { summarizeContext, type CollectionsContext, type PowerAppsContent } from "@collections/contract";
+import { summarizeContext, type CollectionsContext, type DashboardSpec, type PowerAppsContent } from "@collections/contract";
 import type { FakeCopilot } from "../fake/copilot";
 import { logEvent } from "../fake/mda-store";
 import { ScriptedAgent, msgId, type PaneMessage } from "./agent";
@@ -34,7 +34,14 @@ function renderMarkdownBold(text: string) {
 }
 
 /** The fake Microsoft 365 Copilot side panel, wired to the FakeCopilot event bus. */
-export function CopilotPane({ copilot, mode }: { copilot: FakeCopilot; mode: McpMode }) {
+export interface CopilotPaneProps {
+  copilot: FakeCopilot;
+  mode: McpMode;
+  /** The simulated contoso_collectiondashboard table, shared with the app. */
+  dashboards: Map<string, DashboardSpec>;
+}
+
+export function CopilotPane({ copilot, mode, dashboards }: CopilotPaneProps) {
   const styles = useStyles();
   const [open, setOpen] = React.useState(false);
   const [enabled, setEnabled] = React.useState(copilot.isEnabled());
@@ -53,16 +60,22 @@ export function CopilotPane({ copilot, mode }: { copilot: FakeCopilot; mode: Mcp
   const patch = React.useCallback((id: string, p: Partial<PaneMessage>) => setMessages((ms) => ms.map((m) => (m.id === id ? ({ ...m, ...p } as PaneMessage) : m))), []);
 
   React.useEffect(() => {
-    connectMcp(mode)
+    connectMcp(mode, dashboards)
       .then(async (c) => {
         const agent = new ScriptedAgent(c, post, patch, () => contextRef.current);
         await agent.init();
         agentRef.current = agent;
         setClient(c);
+        // Context may have arrived while we were connecting.
+        const ctx = contextRef.current;
+        if (ctx?.customerNo && greeted.current !== String(ctx.customerNo)) {
+          greeted.current = String(ctx.customerNo);
+          agent.greet(ctx);
+        }
         setStatus(mode === "http" ? "MCP: http server" : "MCP: in-page server");
       })
       .catch((err: Error) => setStatus(`MCP connection failed: ${err.message}`));
-  }, [mode, post, patch]);
+  }, [mode, dashboards, post, patch]);
 
   const send = React.useCallback(
     (text: string, via: "app" | "typed" | "widget") => {
@@ -96,7 +109,10 @@ export function CopilotPane({ copilot, mode }: { copilot: FakeCopilot; mode: Mcp
     [copilot, send],
   );
 
-  React.useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
+  React.useEffect(() => {
+    // Braces matter: newer browsers return a Promise from scrollIntoView.
+    void endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   if (!enabled) return <div className={styles.root}><div className={styles.closed}>Microsoft 365 Copilot is turned off for this user / app.</div></div>;
   if (!open) {

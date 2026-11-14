@@ -6,9 +6,14 @@ import type { CollectionsRepository, InvoiceQuery } from "./types";
 /** Fixture-backed repository. Browser-safe, so the mock host can run the real server in-page. */
 export class MockRepository implements CollectionsRepository {
   readonly mode = "mock" as const;
-  private readonly dashboards = new Map<string, DashboardSpec>();
-
-  constructor(private readonly data: FixtureSet = defaultFixtures) {}
+  /**
+   * @param dashboards Pass a shared map to simulate one Dataverse table used by
+   *   both the server and the app (the mock host does this).
+   */
+  constructor(
+    private readonly data: FixtureSet = defaultFixtures,
+    private readonly dashboards: Map<string, DashboardSpec> = new Map(),
+  ) {}
 
   asOf(): string {
     return this.data.asOf;

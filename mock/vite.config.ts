@@ -11,5 +11,8 @@ export default defineConfig({
     port: 5173,
     proxy: { "/mcp": { target: process.env.MCP_SERVER_URL ?? "http://localhost:3001", changeOrigin: true } },
   },
-  build: { chunkSizeWarningLimit: 4000 },
+  build: {
+    chunkSizeWarningLimit: 4000,
+    rollupOptions: { onwarn: (w, warn) => (w.code === "INVALID_ANNOTATION" ? undefined : warn(w)) },
+  },
 });

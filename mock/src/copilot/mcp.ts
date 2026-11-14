@@ -1,6 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import type { DashboardSpec } from "@collections/contract";
 import { MockRepository } from "@collections/mcp-server/mock-repository";
 import { createCollectionsServer } from "@collections/mcp-server/server";
 import { WIDGETS, type WidgetSource } from "@collections/mcp-server/widgets";
@@ -17,13 +18,13 @@ const bundledWidgets: WidgetSource = async (key) => (key === "priorityList" ? pr
  * MockRepository: real tools, real protocol, no network.
  * http: a running server (`npm run demo:http`), through the Vite proxy.
  */
-export async function connectMcp(mode: McpMode): Promise<Client> {
+export async function connectMcp(mode: McpMode, dashboards: Map<string, DashboardSpec>): Promise<Client> {
   const client = new Client({ name: "mock-m365-copilot", version: "1.0.0" });
   if (mode === "http") {
     await client.connect(new StreamableHTTPClientTransport(new URL("/mcp", window.location.href)));
     return client;
   }
-  const server = createCollectionsServer({ repository: new MockRepository(), widgets: bundledWidgets });
+  const server = createCollectionsServer({ repository: new MockRepository(undefined, dashboards), widgets: bundledWidgets });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
   return client;

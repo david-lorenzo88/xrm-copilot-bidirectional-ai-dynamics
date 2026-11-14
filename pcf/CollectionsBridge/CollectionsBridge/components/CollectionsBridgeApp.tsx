@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Badge, Button, Caption1, Spinner, Text, makeStyles, tokens } from "@fluentui/react-components";
+import { Badge, Button, Caption1, Spinner, Text, makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
 import { AgingDashboard, PriorityList, formatMoney } from "@collections/ui";
 import type { BridgeState, CollectionsBridge } from "../bridge/bridge";
 
@@ -50,9 +50,10 @@ export function CollectionsBridgeApp({ bridge }: { bridge: CollectionsBridge }) 
         </Button>
       </div>
 
-      {s.notice && <Text className={`${styles.notice} ${styles[s.notice.intent]}`}>{s.notice.text}</Text>}
+      {s.notice && <Text className={mergeClasses(styles.notice, styles[s.notice.intent])}>{s.notice.text}</Text>}
 
-      {s.worklist && (
+      {/* With a worklist view configured the grid shows the list; otherwise the control does. */}
+      {s.worklist && !bridge.settings.worklistViewId && (
         <div className={styles.panel}>
           <PriorityList items={s.worklist.items} title={s.worklist.title} onOpenInvoice={(i) => void bridge.openInvoice(i.invoiceId, i.invoiceNo)} />
           <div style={{ padding: "0 12px 12px" }}>

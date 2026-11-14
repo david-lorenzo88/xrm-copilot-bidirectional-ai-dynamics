@@ -37,6 +37,7 @@ export function useToolResult<T>(): [T | undefined, (next: CallToolResult) => vo
   const [state, setState] = React.useState<CallToolResult | undefined>(latest);
   React.useEffect(() => {
     listeners.add(setState);
+    if (latest) setState(latest); // a result may have landed between render and subscribe
     return () => void listeners.delete(setState);
   }, []);
   const error = state?.isError ? state.content.map((c) => (c.type === "text" ? c.text : "")).join(" ") : undefined;

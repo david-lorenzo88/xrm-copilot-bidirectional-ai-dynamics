@@ -8,11 +8,14 @@ import type { AuditEntry, CollectionsDataService } from "../bridge/data";
  * and tests; never imported by the control's index.ts, so it is not bundled.
  */
 export class FixtureDataService implements CollectionsDataService {
-  readonly dashboards = new Map<string, DashboardSpec>();
   readonly actionLog: (AuditEntry & { at: string; id: string; kind: "audit" | "followUp" })[] = [];
   private seq = 0;
 
-  constructor(private readonly data: FixtureSet = defaultFixtures) {}
+  constructor(
+    private readonly data: FixtureSet = defaultFixtures,
+    /** Share with MockRepository to simulate the one contoso_collectiondashboard table. */
+    readonly dashboards: Map<string, DashboardSpec> = new Map(),
+  ) {}
 
   async findCustomer(customerNo: string): Promise<Customer | undefined> {
     return this.data.customers.find((c) => c.number === customerNo);
