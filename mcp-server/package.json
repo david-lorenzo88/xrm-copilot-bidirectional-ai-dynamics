@@ -17,7 +17,8 @@
     "build:server": "node scripts/bundle.mjs",
     "build": "npm run build:widgets && npm run build:server",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "export:tools": "tsx scripts/export-tools.ts"
   },
   "dependencies": {
     "@azure/msal-node": "^7.2.2",

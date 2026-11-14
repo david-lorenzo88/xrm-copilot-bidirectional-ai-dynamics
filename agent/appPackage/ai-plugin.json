@@ -1,0 +1,36 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/plugin/v2.4/schema.json",
+  "schema_version": "v2.4",
+  "name_for_human": "Contoso Collections",
+  "description_for_human": "Collections tools over Business Central data (via Dataverse virtual tables), with interactive widgets that also drive the Collections Workspace app.",
+  "namespace": "contosocollections",
+  "functions": [
+    { "name": "get_customer_context", "description": "Customer header, aging summary, risk snapshot and top overdue invoices for one customer." },
+    { "name": "analyze_payment_behavior", "description": "Average days late, trend, risk score and signals for one customer." },
+    { "name": "prioritize_collections", "description": "Ranked chase-today worklist; renders the priority-list widget that opens invoices and the worklist in the app." },
+    { "name": "build_aging_dashboard", "description": "Creates or revises an aging dashboard spec and renders it here and in the app." },
+    { "name": "get_dashboard", "description": "Current spec and data of a stored dashboard (the user may have changed it in the app)." },
+    { "name": "update_dashboard", "description": "Patches a stored dashboard; last write wins." }
+  ],
+  "runtimes": [
+    {
+      "type": "RemoteMCPServer",
+      "spec": {
+        "url": "${{MCP_SERVER_URL}}",
+        "mcp_tool_description": { "file": "mcp-tools.json" }
+      },
+      "auth": {
+        "type": "OAuthPluginVault",
+        "reference_id": "${{MCP_AUTH_REFERENCE_ID}}"
+      },
+      "run_for_functions": [
+        "get_customer_context",
+        "analyze_payment_behavior",
+        "prioritize_collections",
+        "build_aging_dashboard",
+        "get_dashboard",
+        "update_dashboard"
+      ]
+    }
+  ]
+}

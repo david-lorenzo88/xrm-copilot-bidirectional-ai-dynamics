@@ -1,0 +1,23 @@
+{
+  "logicalName": "contoso_collectionaction",
+  "entitySetName": "contoso_collectionactions",
+  "displayName": "Collection action",
+  "displayCollectionName": "Collection actions",
+  "description": "Audit of agent-initiated actions handled by the app (handled, rejected, failed) and confirmed follow-ups. Never written to Business Central.",
+  "ownership": "UserOwned",
+  "primaryName": { "logicalName": "contoso_name", "displayName": "Name", "maxLength": 200 },
+  "columns": [
+    { "logicalName": "contoso_actionid", "type": "String", "displayName": "Action id", "maxLength": 100, "description": "e.g. Contoso.Collections.OpenInvoices" },
+    { "logicalName": "contoso_customerno", "type": "String", "displayName": "Customer number", "maxLength": 20 },
+    { "logicalName": "contoso_payloadjson", "type": "Memo", "displayName": "Payload (JSON)", "maxLength": 100000 },
+    { "logicalName": "contoso_note", "type": "Memo", "displayName": "Note", "maxLength": 4000 },
+    { "logicalName": "contoso_promisedate", "type": "DateOnly", "displayName": "Promise-to-pay date" },
+    { "logicalName": "contoso_promisedamount", "type": "Decimal", "displayName": "Promised amount", "precision": 2, "min": 0, "max": 100000000000 },
+    { "logicalName": "contoso_outcome", "type": "String", "displayName": "Outcome", "maxLength": 20, "description": "handled | rejected | cancelled | failed | confirmed" },
+    { "logicalName": "contoso_source", "type": "String", "displayName": "Source", "maxLength": 20, "description": "agent | user" }
+  ],
+  "notes": [
+    "Text columns instead of choices keep the PCF free of option-set integers; switch to choices if you need reporting.",
+    "Enable auditing on this table, and consider a retention policy."
+  ]
+}

@@ -11,8 +11,8 @@ coverage/
 pcf/**/out/
 pcf/**/obj/
 pcf/**/bin/
-dataverse/solution/bin/
-dataverse/solution/obj/
+dataverse/solution/**/bin/
+dataverse/solution/**/obj/
 dataverse/**/*.zip
 
 # Agents Toolkit
