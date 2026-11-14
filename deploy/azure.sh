@@ -137,7 +137,13 @@ if [[ "$SKIP_BUILD" == 1 ]]; then
   [[ -n "$IMAGE_TAG" ]] || die "--skip-build: no image in ${ACR_NAME}/${IMAGE_REPO} yet."
   ok "using existing tag ${IMAGE_TAG}"
 elif [[ "$REBUILD" == 1 || -z "$(try_query "" az acr repository show-tags -n "$ACR_NAME" --repository "$IMAGE_REPO" --query "[?@=='${IMAGE_TAG}'] | [0]" -o tsv)" ]]; then
-  run az acr build -r "$ACR_NAME" -t "${IMAGE_REPO}:${IMAGE_TAG}" -f "${REPO_ROOT}/mcp-server/Dockerfile" "$REPO_ROOT"
+  # Upload only the git-tracked files the Dockerfile needs (~1 MB). Uploading the whole repository
+  # (~76 MB) made ACR Tasks fail with "failed to download context".
+  CTX=$(mktemp -d)
+  git -C "$REPO_ROOT" ls-files package.json package-lock.json tsconfig.base.json .dockerignore packages mcp-server \
+    mock/package.json pcf/CollectionsBridge/package.json | (cd "$REPO_ROOT" && tar -cf - -T -) | tar -xf - -C "$CTX"
+  run az acr build -r "$ACR_NAME" -t "${IMAGE_REPO}:${IMAGE_TAG}" -f "${CTX}/mcp-server/Dockerfile" "$CTX"
+  rm -rf "$CTX"
 else ok "tag ${IMAGE_TAG} already in ACR (use --rebuild to build again)"; fi
 IMAGE="${ACR_LOGIN}/${IMAGE_REPO}:${IMAGE_TAG}"
 

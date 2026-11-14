@@ -310,6 +310,7 @@ function explain(err, context) {
 
 // ------------------------------------------------------------------ main
 let companyRoot = `${API_ROOT}/companies(<company-id>)`;
+let demoPaymentTerms; // { id, code } applied to this script's customers (and to drafts created before it was set)
 const stats = { customersCreated: 0, customersSkipped: 0, invoicesCreated: 0, invoicesResumed: 0, invoicesPosted: 0, invoicesSkipped: 0, paymentsCreated: 0, paymentsSkipped: 0, journalPosts: 0 };
 
 try {
@@ -376,6 +377,7 @@ async function main() {
     ok(`${stats.customersCreated} created, ${stats.customersSkipped} already there`);
   }
   for (const c of plan.customers) if (!customerIds.has(c.number)) customerIds.set(c.number, DRY ? `<customer-id ${c.number}>` : undefined);
+  if (STEPS.has("customers") || STEPS.has("invoices")) await ensurePostingGroups();
 
   // ---------------------------------------------------------------- invoices
   const invoiceState = new Map(); // ext -> posted invoice { id, number, status, totalAmountIncludingTax, remainingAmount }
@@ -401,6 +403,8 @@ async function main() {
         if (inv) {
           stats.invoicesResumed++;
           lines = await listAll(`salesInvoices(${inv.id})/salesInvoiceLines`);
+          // A draft created before the customer had payment terms keeps none; give it ours.
+          if (demoPaymentTerms && !DRY) await patch(`salesInvoices(${inv.id})`, { paymentTermsId: demoPaymentTerms.id }, inv["@odata.etag"]);
         } else {
           inv = await post("salesInvoices", { customerId, invoiceDate: p.invoiceDate, postingDate: p.invoiceDate, dueDate: p.dueDate, externalDocumentNumber: p.ext });
           stats.invoicesCreated++;
@@ -534,6 +538,47 @@ async function main() {
     else ok(`all ${todo.length} paid invoices are closed`);
   }
   return finish();
+}
+
+/**
+ * API v2.0 cannot set posting groups, and customers created through it have none, so invoices
+ * can't post. The standard "workflowCustomers" OData page exposes them: copy the most common
+ * complete combination used by the company's own customers (or --posting-groups CUST,GENBUS,VATBUS)
+ * onto this script's customers only (number starts with PREFIX + "C-").
+ */
+async function ensurePostingGroups() {
+  const odata = `${API_ROOT.replace(/\/api\/v2\.0$/, "/ODataV4")}/Company(${odataStr(BC_COMPANY)})`;
+  const fields = ["customerPostingGroup", "genBusPostingGroup", "vatBusPostingGroup"];
+  const rows = await listAll(`${odata}/workflowCustomers?$select=id,number,paymentTermsCode,${fields.join(",")}`);
+  const ours = rows.filter((r) => r.number.startsWith(`${PREFIX}C-`));
+  // Payment terms are required for posting too. The fixtures set each invoice's due date, so the code
+  // only has to exist: use --payment-terms, else a plain net-30 term (30D, single settlement).
+  const terms = await listAll("paymentTerms?$select=id,code,dueDateCalculation");
+  demoPaymentTerms = opt("--payment-terms")
+    ? terms.find((t) => t.code === opt("--payment-terms"))
+    : terms.find((t) => t.dueDateCalculation === "30D" && !/X/i.test(t.code)) ?? terms[0];
+  if (!demoPaymentTerms && !DRY) die(`No payment terms in ${BC_COMPANY}; create one or pass --payment-terms <code>.`);
+  const missing = ours.filter((r) => fields.some((f) => !r[f]) || !r.paymentTermsCode);
+  if (!missing.length) {
+    if (!DRY) ok(`posting groups and payment terms set on all ${ours.length} ${PREFIX}C-* customers`);
+    return;
+  }
+  let groups = opt("--posting-groups")?.split(",");
+  if (!groups) {
+    const counts = new Map();
+    for (const r of rows) {
+      if (r.number.startsWith(PREFIX) || fields.some((f) => !r[f])) continue;
+      const key = JSON.stringify(fields.map((f) => r[f]));
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const best = [...counts].sort((a, b) => b[1] - a[1])[0];
+    if (!best) die(`No existing customer in ${BC_COMPANY} has complete posting groups to copy; pass --posting-groups CUST,GENBUS,VATBUS.`);
+    groups = JSON.parse(best[0]);
+  }
+  for (const r of missing) {
+    await patch(`${odata}/workflowCustomers(${r.id})`, { ...Object.fromEntries(fields.map((f, i) => [f, groups[i]])), paymentTermsCode: demoPaymentTerms?.code }, r["@odata.etag"]);
+  }
+  ok(`posting groups ${groups.join(" / ")} and payment terms ${demoPaymentTerms?.code} set on ${missing.length} ${PREFIX}C-* customers`);
 }
 
 async function resolveLineTarget() {
