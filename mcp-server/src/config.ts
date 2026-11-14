@@ -18,7 +18,9 @@ const Env = z
     AZURE_CLIENT_SECRET: z.string().optional(),
     AZURE_CLIENT_CERTIFICATE_PATH: z.string().optional(),
     AZURE_CLIENT_CERTIFICATE_THUMBPRINT: z.string().optional(),
-    /** Workload identity federation (e.g. Container Apps managed identity as a federated credential). */
+    /** User-assigned managed identity configured as a federated credential on the app registration (Azure Container Apps). */
+    AZURE_MANAGED_IDENTITY_CLIENT_ID: z.string().optional(),
+    /** Workload identity federation with a projected token file (e.g. AKS). */
     AZURE_FEDERATED_TOKEN_FILE: z.string().optional(),
     /** Scope advertised in the protected-resource metadata. */
     MCP_SCOPE: z.string().optional(),
@@ -31,8 +33,8 @@ const Env = z
         if (!env[key]) ctx.addIssue({ code: "custom", path: [key], message: `${key} is required when DATA_MODE=dataverse` });
       }
       if (env.AUTH_MODE !== "entra") ctx.addIssue({ code: "custom", path: ["AUTH_MODE"], message: "DATA_MODE=dataverse needs AUTH_MODE=entra (OBO needs the user's token)" });
-      if (!env.AZURE_CLIENT_SECRET && !env.AZURE_CLIENT_CERTIFICATE_PATH && !env.AZURE_FEDERATED_TOKEN_FILE) {
-        ctx.addIssue({ code: "custom", path: ["AZURE_CLIENT_SECRET"], message: "a client secret, certificate or federated token file is required for OBO" });
+      if (!env.AZURE_MANAGED_IDENTITY_CLIENT_ID && !env.AZURE_CLIENT_SECRET && !env.AZURE_CLIENT_CERTIFICATE_PATH && !env.AZURE_FEDERATED_TOKEN_FILE) {
+        ctx.addIssue({ code: "custom", path: ["AZURE_CLIENT_SECRET"], message: "a managed identity, certificate, federated token file or client secret is required for OBO" });
       }
     }
     if (env.AUTH_MODE === "entra" && (!env.AZURE_TENANT_ID || !env.AZURE_CLIENT_ID)) {

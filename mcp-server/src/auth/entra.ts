@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { ConfidentialClientApplication, type Configuration } from "@azure/msal-node";
+import { ConfidentialClientApplication, ManagedIdentityApplication, type Configuration } from "@azure/msal-node";
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 import type { Config } from "../config";
 
@@ -40,7 +40,12 @@ export function createOboTokenProvider(config: Config) {
     clientId: config.AZURE_CLIENT_ID!,
     authority: `https://login.microsoftonline.com/${config.AZURE_TENANT_ID}`,
   };
-  if (config.AZURE_CLIENT_SECRET) auth.clientSecret = config.AZURE_CLIENT_SECRET;
+  if (config.AZURE_MANAGED_IDENTITY_CLIENT_ID) {
+    // Secretless on Azure Container Apps: the user-assigned managed identity is a
+    // federated credential of the app registration.
+    const mi = new ManagedIdentityApplication({ managedIdentityIdParams: { userAssignedClientId: config.AZURE_MANAGED_IDENTITY_CLIENT_ID } });
+    auth.clientAssertion = async () => (await mi.acquireToken({ resource: "api://AzureADTokenExchange" })).accessToken;
+  } else if (config.AZURE_CLIENT_SECRET) auth.clientSecret = config.AZURE_CLIENT_SECRET;
   else if (config.AZURE_CLIENT_CERTIFICATE_PATH) {
     auth.clientCertificate = {
       thumbprintSha256: config.AZURE_CLIENT_CERTIFICATE_THUMBPRINT!,
