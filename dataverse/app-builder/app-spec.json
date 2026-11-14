@@ -70,20 +70,21 @@
   "relationships": [],
   "views": [
     { "entity": "dyn365bc_salesinvoice_v2_0", "name": "Overdue invoices",
-      "description": "Posted invoices past their due date with an open balance: the list a collections specialist starts from and the view the PCF publishes to Copilot as context.",
+      "description": "Posted invoices past their due date that are still open (BC status Open; remainingAmount is not filterable on the virtual table): the list a collections specialist starts from and the view the PCF publishes to Copilot as context.",
       "columns": ["dyn365bc_number", "dyn365bc_customername", "dyn365bc_duedate", "dyn365bc_remainingamount", "dyn365bc_totalamountincludingtax", "dyn365bc_currencycode"],
       "sort": [{ "attr": "dyn365bc_duedate", "dir": "asc" }],
       "activeOnly": false,
       "filters": [
-        { "attr": "dyn365bc_duedate", "op": "olderthan-x-days", "value": "0" },
-        { "attr": "dyn365bc_remainingamount", "op": "gt", "value": "0" }
+        { "attr": "dyn365bc_duedate", "op": "olderthan-x-days", "value": "1" },
+        { "attr": "dyn365bc_status", "op": "eq", "value": "Open" },
+        { "attr": "dyn365bc_customernumber", "op": "like", "value": "DEMO-C-%" }
       ] },
     { "entity": "dyn365bc_customer_v2_0", "name": "Customers with balance",
       "description": "Customers that owe money, largest balance first: where a specialist picks who to open.",
       "columns": ["dyn365bc_displayname", "dyn365bc_number", "dyn365bc_balancedue", "dyn365bc_creditlimit", "dyn365bc_city"],
       "sort": [{ "attr": "dyn365bc_balancedue", "dir": "desc" }],
       "activeOnly": false,
-      "filters": [{ "attr": "dyn365bc_balancedue", "op": "gt", "value": "0" }] },
+      "filters": [{ "attr": "dyn365bc_balancedue", "op": "gt", "value": "0" }, { "attr": "dyn365bc_number", "op": "like", "value": "DEMO-C-%" }] },
     { "entity": "ppn_collectiondashboard", "name": "Recent dashboards",
       "description": "Dashboards built by the agent or edited in the app, newest first.",
       "columns": ["ppn_name", "ppn_customerno", "ppn_version", "modifiedon"],

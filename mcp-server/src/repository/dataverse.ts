@@ -1,5 +1,5 @@
 import { DashboardSpec, isNewerSpec } from "@collections/contract";
-import { BC_TABLES, LOCAL_TABLES, formatIsoDate, rowToCustomer, rowToInvoice, type Customer, type Invoice } from "@collections/domain";
+import { BC_INVOICE_STATUS_OPEN, BC_TABLES, LOCAL_TABLES, formatIsoDate, rowToCustomer, rowToInvoice, type Customer, type Invoice } from "@collections/domain";
 import { DataverseClient, DataverseError, odataString, type Row } from "./dataverse-client";
 import type { CollectionsRepository, InvoiceQuery } from "./types";
 
@@ -20,7 +20,16 @@ export class DataverseRepository implements CollectionsRepository {
   readonly mode = "dataverse" as const;
   private ledgerAvailable = true;
 
-  constructor(private readonly client: DataverseClient) {}
+  constructor(
+    private readonly client: DataverseClient,
+    /** customerNumberPrefix scopes every BC read (e.g. "DEMO-C-" for the seeded demo customers). */
+    private readonly options: { customerNumberPrefix?: string } = {},
+  ) {}
+
+  private scope(column: string): string[] {
+    const p = this.options.customerNumberPrefix;
+    return p ? [`startswith(${column},${odataString(p)})`] : [];
+  }
 
   asOf(): string {
     return formatIsoDate(new Date());
@@ -28,7 +37,8 @@ export class DataverseRepository implements CollectionsRepository {
 
   async listCustomers(): Promise<Customer[]> {
     const c = CUS.columns;
-    const rows = await this.client.list(CUS.entitySet, `$select=${Object.values(c).join(",")}&$top=500`);
+    const scoped = this.scope(c.number);
+    const rows = await this.client.list(CUS.entitySet, `$select=${Object.values(c).join(",")}${scoped.length ? `&$filter=${encodeURIComponent(scoped.join(" and "))}` : ""}&$top=500`);
     return rows.map(rowToCustomer);
   }
 
@@ -46,12 +56,13 @@ export class DataverseRepository implements CollectionsRepository {
 
   async listInvoices({ customerNos, openOnly, since }: InvoiceQuery): Promise<Invoice[]> {
     const c = INV.columns;
-    const filters: string[] = [];
+    const filters: string[] = customerNos?.length ? [] : this.scope(c.customerNumber);
     if (customerNos?.length) filters.push(`(${customerNos.map((n) => `${c.customerNumber} eq ${odataString(n)}`).join(" or ")})`);
-    if (openOnly) filters.push(`${c.remainingAmount} gt 0`);
+    // remainingAmount isn't filterable on the BC virtual table: filter on status Open, check the amount here.
+    if (openOnly) filters.push(`${c.status} eq ${BC_INVOICE_STATUS_OPEN}`);
     if (since) filters.push(`${c.invoiceDate} ge ${since}`);
     const query = `$select=${Object.values(c).join(",")}${filters.length ? `&$filter=${encodeURIComponent(filters.join(" and "))}` : ""}`;
-    const invoices = (await this.client.list(INV.entitySet, query)).map(rowToInvoice);
+    const invoices = (await this.client.list(INV.entitySet, query)).map(rowToInvoice).filter((i) => !openOnly || i.remainingAmount > 0);
     return openOnly ? invoices : this.attachClosedDates(invoices, customerNos, since);
   }
 

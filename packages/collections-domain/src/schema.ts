@@ -11,7 +11,7 @@
 export const BC_TABLES = {
   customer: {
     logicalName: "dyn365bc_customer_v2_0",
-    entitySet: "dyn365bc_customer_v2_0s",
+    entitySet: "dyn365bc_customers_v2_0", // verified in the demo tenant
     columns: {
       id: "dyn365bc_customer_v2_0id",
       number: "dyn365bc_number",
@@ -25,11 +25,12 @@ export const BC_TABLES = {
   },
   salesInvoice: {
     logicalName: "dyn365bc_salesinvoice_v2_0",
-    entitySet: "dyn365bc_salesinvoice_v2_0s",
+    entitySet: "dyn365bc_salesinvoices_v2_0", // verified in the demo tenant
     columns: {
       id: "dyn365bc_salesinvoice_v2_0id",
       number: "dyn365bc_number",
-      customerId: "dyn365bc_customerid",
+      /** Lookup to the customer virtual table (dyn365bc_customer_customerid), read as its _value column. */
+      customerId: "_dyn365bc_customer_customerid_value",
       customerNumber: "dyn365bc_customernumber",
       customerName: "dyn365bc_customername",
       invoiceDate: "dyn365bc_invoicedate",
@@ -59,6 +60,9 @@ export const BC_TABLES = {
     },
   },
 } as const;
+
+/** BC sales invoice status "Open" (posted, not fully paid) as the virtual table's choice value. Verified in the demo tenant. */
+export const BC_INVOICE_STATUS_OPEN = 200000003;
 
 /** Local (native) Dataverse tables owned by this solution. Never written to BC. */
 export const LOCAL_TABLES = {

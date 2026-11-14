@@ -11,7 +11,7 @@ const ID = "0f8fad5b-d9cb-469f-a165-70867728950e";
 
 type Route = (url: URL, init: RequestInit) => { status?: number; body?: unknown } | undefined;
 
-function fakeDataverse(route: Route) {
+function fakeDataverse(route: Route, options: { customerNumberPrefix?: string } = {}) {
   const calls: { url: URL; init: RequestInit }[] = [];
   const fetchImpl = (async (input: string | URL, init: RequestInit = {}) => {
     const url = new URL(String(input));
@@ -20,10 +20,37 @@ function fakeDataverse(route: Route) {
     return new Response(r.body === undefined ? null : JSON.stringify(r.body), { status: r.status ?? 200 });
   }) as typeof fetch;
   const client = new DataverseClient({ url: "https://contoso.crm4.dynamics.com/", getToken: async () => "dv-token", fetchImpl });
-  return { repo: new DataverseRepository(client), calls };
+  return { repo: new DataverseRepository(client, options), calls };
 }
 
 describe("DataverseRepository", () => {
+  it("scopes BC reads to a customer number prefix and filters open invoices by status", async () => {
+    const { repo, calls } = fakeDataverse(
+      (url) => {
+        if (url.pathname.endsWith(BC_TABLES.customer.entitySet)) return { body: { value: [] } };
+        if (url.pathname.endsWith(BC_TABLES.salesInvoice.entitySet)) {
+          return {
+            body: {
+              value: [
+                { [I.id]: ID, [I.number]: "SI-1", [I.customerNumber]: "DEMO-C-1001", [I.dueDate]: "2026-10-01", [I.invoiceDate]: "2026-09-01", [I.totalAmount]: 100, [I.remainingAmount]: 40 },
+                { [I.id]: ID, [I.number]: "SI-2", [I.customerNumber]: "DEMO-C-1001", [I.dueDate]: "2026-10-01", [I.invoiceDate]: "2026-09-01", [I.totalAmount]: 100, [I.remainingAmount]: 0 },
+              ],
+            },
+          };
+        }
+      },
+      { customerNumberPrefix: "DEMO-C-" },
+    );
+    await repo.listCustomers();
+    expect(calls[0]!.url.searchParams.get("$filter")).toBe(`startswith(${C.number},'DEMO-C-')`);
+    const open = await repo.listInvoices({ openOnly: true });
+    const filter = calls[1]!.url.searchParams.get("$filter")!;
+    expect(filter).toContain(`startswith(${I.customerNumber},'DEMO-C-')`);
+    expect(filter).toContain(`${I.status} eq 200000003`);
+    expect(filter).not.toContain(I.remainingAmount); // not filterable on the BC virtual table
+    expect(open.map((i) => i.number)).toEqual(["SI-1"]);
+  });
+
   it("maps BC virtual-table rows and sends the OBO token", async () => {
     const { repo, calls } = fakeDataverse((url) => {
       if (url.pathname.endsWith(BC_TABLES.customer.entitySet)) {

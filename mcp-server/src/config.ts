@@ -26,6 +26,8 @@ const Env = z
     MCP_SCOPE: z.string().optional(),
 
     DATAVERSE_URL: z.url().optional(),
+    /** Optional: only BC customers whose number starts with this (e.g. DEMO-C- for the seeded demo data). */
+    CUSTOMER_NUMBER_PREFIX: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     if (env.DATA_MODE === "dataverse") {

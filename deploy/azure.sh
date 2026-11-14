@@ -252,6 +252,8 @@ ENV_VARS=(
   "DATAVERSE_URL=${DATAVERSE_URL}" "AZURE_TENANT_ID=${TENANT_ID}" "AZURE_CLIENT_ID=${APP_ID}"
   "AZURE_MANAGED_IDENTITY_CLIENT_ID=${MI_CLIENT_ID}"
 )
+# Optional: scope BC reads to the seeded demo customers (deploy/tenant.env).
+[[ -n "${CUSTOMER_NUMBER_PREFIX:-}" ]] && ENV_VARS+=("CUSTOMER_NUMBER_PREFIX=${CUSTOMER_NUMBER_PREFIX}")
 log "Container App ${CA_NAME} (external ingress :${PORT}, min replicas 1)"
 if [[ -z "$(try_query "" az containerapp show -g "$RG" -n "$CA_NAME" --query id -o tsv)" ]]; then
   # The AcrPull assignment can take a minute to propagate: retry the first pull.
