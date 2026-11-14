@@ -40,9 +40,20 @@ resource group tagged `project=xrm-copilot-collections`, and the app registratio
 | 4a | Model-driven app | model-apps `app-builder` with `dataverse/app-builder/app-spec.json` (`app-spec.phase1.json` until BC is linked) | Tables, views, forms, app, sitemap and the Collections Specialist role, in solution `CollectionsWorkspace` |
 | 4 | Dataverse | `deploy/dataverse.sh --dry-run`, then without `--dry-run` | Checks that `pac` is on `DATAVERSE_URL` (`pac org who`). Note: `pac pcf push` ends with *Publish All Customizations* for the whole environment. Reuses the `ppn` publisher (`PowerPlatformNinja` first), creates solution `CollectionsWorkspace` and pushes the PCF into it. It prints the publisher the app-builder App Spec must use. `--tables` is the fallback that creates the two `ppn_` tables with `create-tables.mjs` |
 | 5 | Azure + Entra | `deploy/azure.sh --dry-run`, then without `--dry-run` | Registers the resource providers. Creates the resource group, Log Analytics, the Container Apps environment, ACR (`az acr build` from a minimal git-tracked context; the full repository made ACR Tasks fail), the managed identity and the Container App. Also creates the app registration `xrm-copilot-collections-mcp` (`access_as_user`, Dataverse `user_impersonation`, federated credential, Teams SSO redirect URIs). Writes `deploy/outputs.env`. Admin consent is **not** granted: an admin runs the printed URL or command |
+| 4c | PCF (update) | `bash deploy/pcf-import.sh` | Builds a wrapper solution holding only the control, with the environment's own publisher block, and imports it without *Publish All*. Bump the control version first |
+| 4d | PCF on the form | `node deploy/bind-pcf.mjs` | Binds CollectionsBridge to the customer number on *Collections customer* (all form factors). gptId comes from the app's default-agent environment variable. Re-run after rebuilding the form with app-builder |
 | 4b | Copilot for this app | `bash deploy/app-settings.sh` | App-level *Enable M365 Copilot in model-driven apps* = 1 for Collections Workspace only, then publishes that app only |
 | 6 | Agent | `node deploy/agent.mjs --dry-run`, then without | Device-code sign-in (works from a remote container, unlike the Agents Toolkit CLI's browser sign-in). Creates the Entra SSO registration in the Teams Developer Portal, adds its Application ID URI and the token-store pre-authorization to the app registration, makes the MCP server accept that audience, builds and imports the package, and uploads it to Microsoft 365. Tenant values go to the git-ignored `agent/env/.env.dev.local` |
 | 7 | Admin consent | `az ad app permission admin-consent --id <AZURE_CLIENT_ID>` (tenant admin) | Dataverse `user_impersonation` for the OBO exchange |
+
+### BC virtual tables: limits found in the demo tenant
+
+- Any FetchXML `top` attribute makes the provider return a single row: never use `top` (OData `$top` is fine).
+- `remainingAmount` can't be filtered or used for ordering: filter on `status` = Open (choice value 200000003).
+- `olderthan-x-days` needs a value of at least 1.
+- Tables appear only after the catalog row is made visible (`dyn365bc_businesscentralentities.dyn365bc_hasbeengenerated = true`).
+- The standard catalog has no customer ledger entries: payment history (days late, trend) needs the `/bc` custom API page.
+- CRONUS ES has its own customers with the same names as the fixtures: `CUSTOMER_NUMBER_PREFIX=DEMO-C-` and the view filters scope the demo.
 
 ## 2. Business Central virtual tables
 
