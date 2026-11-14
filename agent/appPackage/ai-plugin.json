@@ -8,6 +8,7 @@
     { "name": "get_customer_context", "description": "Customer header, aging summary, risk snapshot and top overdue invoices for one customer." },
     { "name": "analyze_payment_behavior", "description": "Average days late, trend, risk score and signals for one customer." },
     { "name": "prioritize_collections", "description": "Ranked chase-today worklist; renders the priority-list widget that opens invoices and the worklist in the app." },
+    { "name": "propose_follow_up", "description": "Proposes a follow-up (note, promise-to-pay date); renders a card the user sends to the app, which confirms before storing it." },
     { "name": "build_aging_dashboard", "description": "Creates or revises an aging dashboard spec and renders it here and in the app." },
     { "name": "get_dashboard", "description": "Current spec and data of a stored dashboard (the user may have changed it in the app)." },
     { "name": "update_dashboard", "description": "Patches a stored dashboard; last write wins." }
@@ -27,6 +28,7 @@
         "get_customer_context",
         "analyze_payment_behavior",
         "prioritize_collections",
+        "propose_follow_up",
         "build_aging_dashboard",
         "get_dashboard",
         "update_dashboard"

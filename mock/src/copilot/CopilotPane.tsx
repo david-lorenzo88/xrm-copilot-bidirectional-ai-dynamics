@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Badge, Button, Caption1, Card, Input, Spinner, Text, makeStyles, tokens } from "@fluentui/react-components";
+import { Badge, Button, Caption1, Input, Spinner, Text, makeStyles, tokens } from "@fluentui/react-components";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { summarizeContext, type CollectionsContext, type DashboardSpec, type PowerAppsContent } from "@collections/contract";
 import type { FakeCopilot } from "../fake/copilot";
@@ -174,26 +174,6 @@ export function CopilotPane({ copilot, mode, dashboards }: CopilotPaneProps) {
                   }}
                 />
               ) : null;
-            case "card":
-              return (
-                <Card key={m.id} size="small" style={{ alignSelf: "flex-start", maxWidth: "95%" }}>
-                  <Text weight="semibold">{m.title}</Text>
-                  {m.body.map((line, i) => <Caption1 key={i} block>{line}</Caption1>)}
-                  <div>
-                    <Button
-                      appearance="primary"
-                      size="small"
-                      onClick={() => {
-                        // Adaptive Card Action.Submit with data { type: "PowerApps", action, actionData }.
-                        void copilot.deliverAction(m.submit.action, m.submit.actionData, "card");
-                        post({ id: msgId(), role: "system", text: `Submitted ${m.submit.action} to the app` });
-                      }}
-                    >
-                      {m.actionLabel}
-                    </Button>
-                  </div>
-                </Card>
-              );
           }
         })}
         <div ref={endRef} />

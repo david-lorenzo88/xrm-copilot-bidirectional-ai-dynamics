@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+      - name: Build (MCP server + widgets, mock host, PCF)
+        run: npm run build
+      - name: Tool catalogue is up to date
+        run: |
+          npm run export:tools -w mcp-server
+          git diff --exit-code agent/appPackage/mcp-tools.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            mcp-server/dist
+            pcf/CollectionsBridge/out/controls
+          retention-days: 7

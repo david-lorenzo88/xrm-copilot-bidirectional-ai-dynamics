@@ -52,7 +52,9 @@ await step("beat3-in-app-change-reaches-agent", async () => {
 });
 await step("bonus-follow-up-confirmed", async () => {
   await page.click("text=Log a follow-up: promised to pay SI-104008 by 2026-12-04");
-  await page.click("text=Log in app");
+  await page.waitForSelector("text=Nothing is logged until you send it");
+  const card = page.frames().at(-1);
+  await card.getByRole("button", { name: "Log in app" }).click();
   await page.click('button:has-text("Log follow-up")');
   await page.waitForSelector("text=Follow-up logged");
 });

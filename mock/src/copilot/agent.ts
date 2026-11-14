@@ -1,7 +1,7 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { getToolUiResourceUri } from "@modelcontextprotocol/ext-apps/app-bridge";
-import { ActionIds, createAdaptiveCardSubmitData, type PowerAppsContent } from "@collections/contract";
+import type { PowerAppsContent } from "@collections/contract";
 import { addDays, type PaymentBehavior } from "@collections/domain";
 import { FIXTURE_AS_OF } from "@collections/domain/fixtures";
 import type { DashboardResult, PrioritizeResult } from "@collections/mcp-server/server-types";
@@ -11,7 +11,6 @@ export type PaneMessage =
   | { id: string; role: "agent"; text: string }
   | { id: string; role: "tool"; name: string; args: Record<string, unknown>; status: "running" | "done" | "error" }
   | { id: string; role: "widget"; resourceUri: string; toolName: string; args: Record<string, unknown>; result: CallToolResult }
-  | { id: string; role: "card"; title: string; body: string[]; actionLabel: string; submit: ReturnType<typeof createAdaptiveCardSubmitData> }
   | { id: string; role: "system"; text: string; detail?: unknown };
 
 let seq = 0;
@@ -73,7 +72,7 @@ export class ScriptedAgent {
   async handle(prompt: string): Promise<void> {
     const ask = prompt.split("[App context]")[0]!.trim();
     try {
-      if (/follow.?up|promis/i.test(ask)) return this.proposeFollowUp(ask, prompt);
+      if (/follow.?up|promis/i.test(ask)) return await this.proposeFollowUp(ask, prompt);
       if (/dashboard/i.test(ask) && /(build|create|make|new)/i.test(ask)) return await this.buildDashboard();
       if (/dashboard/i.test(ask)) return await this.dashboardStatus();
       if (/90\+/.test(ask)) return await this.severe();
@@ -131,13 +130,13 @@ export class ScriptedAgent {
     this.say(result.content.map((c) => (c.type === "text" ? c.text : "")).join("\n"));
   }
 
-  /** Writes are proposed, never done: an Adaptive Card the user submits (type "PowerApps"). */
-  private proposeFollowUp(ask: string, prompt: string) {
+  /** Writes are proposed, never done: the tool's widget card hands the action to the app, which confirms. */
+  private async proposeFollowUp(ask: string, prompt: string) {
     const customerNo = this.customerNo(prompt);
     if (!customerNo) return this.say("Which customer is the follow-up for?");
     const promiseDate = /(\d{4}-\d{2}-\d{2})/.exec(ask)?.[1] ?? addDays(FIXTURE_AS_OF, 7);
     const note = ask.replace(/^log (a )?follow.?up:?\s*/i, "");
-    const submit = createAdaptiveCardSubmitData(ActionIds.LogFollowUp, { customerNo, note, promiseDate });
-    this.post({ id: msgId(), role: "card", title: "Log this follow-up?", body: [`Customer ${customerNo}`, note, `Promise date ${promiseDate}`], actionLabel: "Log in app", submit });
+    await this.call("propose_follow_up", { customerNo, note, promiseDate });
+    this.say("I've prepared the follow-up. Nothing is logged until you send it to the app and confirm there.");
   }
 }

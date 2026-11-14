@@ -21,7 +21,7 @@ One experience on two surfaces. The **Collections Workspace** model-driven app a
                                                                 │ MCP (Streamable HTTP, Entra SSO)
                                                      ┌──────────▼───────────┐
                                                      │ MCP Apps server      │  Azure Container Apps
-                                                     │  6 tools, 2 widgets  │
+                                                     │  7 tools, 2 widgets  │
                                                      └──────────┬───────────┘
                                                                 │ Dataverse Web API (OBO, as the user)
                          Dataverse ── BC virtual tables (dyn365bc_*) ── Business Central
@@ -99,6 +99,7 @@ component tree and one lifecycle (`destroy()` unregisters handlers).
 - **Repository interface**: `MockRepository` (fixtures, in-memory dashboards) and `DataverseRepository` (Web API, OBO token per request via `@azure/msal-node`, token validation with `jose` against Entra JWKS, v1 and v2 issuers).
 - **Aging in code**: BC virtual tables have limited aggregate/group-by support, so the server (and the PCF) compute aging with `@collections/domain`.
 - **Read-only to ERP**: the only writes go to `contoso_collectiondashboard` (server and PCF) and `contoso_collectionaction` (PCF, after confirmation).
+- **Tools**: `get_customer_context`, `analyze_payment_behavior`, `prioritize_collections` (widget), `propose_follow_up` (widget), `build_aging_dashboard` (widget), `get_dashboard` (widget), `update_dashboard` (widget). `propose_follow_up` was added beyond the original six. Without it, nothing in a real tenant could emit `LogFollowUp`. It writes nothing; its card posts the action and the app confirms.
 - **Widgets**: `registerAppTool(..., { _meta: { ui: { resourceUri } } })` + `registerAppResource(...)` with MIME `text/html;profile=mcp-app` and an empty CSP (single file, no fetches). Read-only tools carry `readOnlyHint: true`, the only annotation Copilot honours.
 - **Widget APIs used**: `ontoolinput`, `ontoolresult`, `callServerTool`, `updateModelContext`, `sendMessage`, `getHostCapabilities`, `getHostContext` and auto `sendSizeChanged`. Not used (unsupported in Copilot): `ontoolinputpartial`, `ontoolcancelled`, `onhostcontextchanged`, `onteardown`, `sendLog`.
 

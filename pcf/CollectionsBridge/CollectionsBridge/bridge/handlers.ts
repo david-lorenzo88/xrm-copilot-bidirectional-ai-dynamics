@@ -1,4 +1,4 @@
-import { ActionIds, CUSTOM_ACTION_IDS, createActionGuard, type ParsedAction } from "@collections/contract";
+import { CUSTOM_ACTION_IDS, createActionGuard, type ParsedAction } from "@collections/contract";
 import { WORKLIST_ENTITIES } from "@collections/domain";
 import type { ActionHandler, CopilotApi } from "./xrm";
 
@@ -36,5 +36,3 @@ function unwrap(actionId: string, raw: unknown): unknown {
   const r = raw as { action?: unknown; actionData?: unknown } | null;
   return r && typeof r === "object" && r.action === actionId && "actionData" in r ? r.actionData : raw;
 }
-
-export { ActionIds };

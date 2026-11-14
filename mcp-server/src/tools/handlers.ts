@@ -6,6 +6,7 @@ import {
   type CollectionsContext,
   type DashboardPatch,
   type DashboardSpec,
+  type LogFollowUpPayload,
   type NewDashboardInput,
   type OpenInvoicesPayload,
   type ShowWorklistPayload,
@@ -113,6 +114,26 @@ export async function prioritize(
     autoApply: args.applyInApp ?? true,
     actionIds: { openInvoices: ActionIds.OpenInvoices, showWorklist: ActionIds.ShowWorklist },
   };
+}
+
+export interface FollowUpProposal {
+  kind: "followUpProposal";
+  customer: { number: string; name: string };
+  /** Sent to the app only when the user clicks "Log in app" in the widget; the app asks again. */
+  payload: LogFollowUpPayload;
+  actionId: typeof ActionIds.LogFollowUp;
+}
+
+/** Proposes a follow-up. Writes nothing: the widget hands it to the app, which confirms and stores it. */
+export async function proposeFollowUp(
+  repo: CollectionsRepository,
+  args: { customerNo: string; note: string; promiseDate?: string; promisedAmount?: number },
+): Promise<FollowUpProposal> {
+  const customer = await requireCustomer(repo, { customerNo: args.customerNo });
+  const payload: LogFollowUpPayload = { contractVersion: CONTRACT_VERSION, customerNo: customer.number, note: args.note };
+  if (args.promiseDate) payload.promiseDate = args.promiseDate;
+  if (args.promisedAmount !== undefined) payload.promisedAmount = args.promisedAmount;
+  return { kind: "followUpProposal", customer: { number: customer.number, name: customer.name }, payload, actionId: ActionIds.LogFollowUp };
 }
 
 export interface DashboardResult {

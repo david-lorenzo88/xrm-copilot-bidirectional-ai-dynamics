@@ -19,9 +19,10 @@ describe("tool catalogue", () => {
       "get_customer_context",
       "get_dashboard",
       "prioritize_collections",
+      "propose_follow_up",
       "update_dashboard",
     ]);
-    for (const name of ["get_customer_context", "analyze_payment_behavior", "prioritize_collections", "get_dashboard"]) {
+    for (const name of ["get_customer_context", "analyze_payment_behavior", "prioritize_collections", "get_dashboard", "propose_follow_up"]) {
       expect(byName[name]!.annotations?.readOnlyHint, name).toBe(true);
     }
     expect(byName.build_aging_dashboard!.annotations?.readOnlyHint).toBe(false);
@@ -141,5 +142,17 @@ describe("dashboard tools (shared state)", () => {
     expect(missing.isError).toBe(true);
     const missingUpdate = await call("update_dashboard", { dashboardId: "0f8fad5b-d9cb-469f-a165-70867728950e", patch: {} });
     expect(missingUpdate.isError).toBe(true);
+  });
+});
+
+describe("propose_follow_up", () => {
+  it("proposes a LogFollowUp payload the app accepts, and writes nothing", async () => {
+    const { call } = await connect();
+    const r = await call<{ kind: string; payload: unknown; actionId: string }>("propose_follow_up", { customerNo: "fabrikam", note: "Promised to pay SI-104008", promiseDate: "2026-12-04", promisedAmount: 48500 });
+    expect(r.data.kind).toBe("followUpProposal");
+    expect(r.data.actionId).toBe(ActionIds.LogFollowUp);
+    expect(guard.parse(ActionIds.LogFollowUp, r.data.payload)).toMatchObject({ ok: true, data: { customerNo: "C-1001", promiseDate: "2026-12-04" } });
+    expect(r.text).toMatch(/Nothing is logged yet/);
+    expect((await call("propose_follow_up", { customerNo: "C-1001", note: "x", promiseDate: "next week" })).isError).toBe(true);
   });
 });

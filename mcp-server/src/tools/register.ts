@@ -2,11 +2,11 @@ import { z } from "zod";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { DashboardDimension, DashboardFilters, DashboardMeasure, RecordId } from "@collections/contract";
+import { DashboardDimension, DashboardFilters, DashboardMeasure, IsoDate, RecordId } from "@collections/contract";
 import type { CollectionsRepository } from "../repository/types";
 import { WIDGETS } from "../widgets";
 import * as h from "./handlers";
-import { summarizeBehavior, summarizeContext, summarizeDashboard, summarizeWorklist } from "./summaries";
+import { summarizeBehavior, summarizeContext, summarizeDashboard, summarizeFollowUp, summarizeWorklist } from "./summaries";
 
 const customerNo = z.string().min(1).max(100).describe("Business Central customer number (e.g. C-1001) or the start of the customer name");
 const groupBy = z.tuple([DashboardDimension, DashboardDimension]).describe('[rows, columns], default ["customer","agingBucket"]');
@@ -62,6 +62,25 @@ export function registerTools(server: McpServer, repo: CollectionsRepository): v
       _meta: { ui: { resourceUri: WIDGETS.priorityList.uri } },
     },
     (args) => respond(() => h.prioritize(repo, args), summarizeWorklist),
+  );
+
+  registerAppTool(
+    server,
+    "propose_follow_up",
+    {
+      title: "Propose follow-up",
+      description:
+        "Proposes logging a collection follow-up (note, promise-to-pay date, amount). Writes nothing: it renders a card the user can send to the app, where they confirm before anything is stored.",
+      inputSchema: {
+        customerNo,
+        note: z.string().min(1).max(2000),
+        promiseDate: IsoDate.optional().describe("YYYY-MM-DD"),
+        promisedAmount: z.number().min(0).optional(),
+      },
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: WIDGETS.priorityList.uri } },
+    },
+    (args) => respond(() => h.proposeFollowUp(repo, args), summarizeFollowUp),
   );
 
   registerAppTool(

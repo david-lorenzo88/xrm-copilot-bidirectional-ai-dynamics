@@ -13,7 +13,7 @@ analysis needs that date to know when an invoice was actually paid.
   if yours differ.
 - Without it, the MCP server still works: it logs a warning and analyses open invoices only.
 
-Seed data: `npm run fixtures:export` writes the demo customers/invoices (`out/fixtures/*.json`) with
+Seed data: `npm run fixtures:export` writes the demo customers/invoices (`packages/collections-domain/out/fixtures/*.json`, git-ignored) with
 the same patterns as the mock (Fabrikam worsening with a 48,500 invoice 100 days overdue, Northwind
 chronic, Tailspin improving). Load them into a sandbox with a configuration package or the BC API,
 then adjust dates so "today" lines up (the fixtures assume 27 Nov 2026).

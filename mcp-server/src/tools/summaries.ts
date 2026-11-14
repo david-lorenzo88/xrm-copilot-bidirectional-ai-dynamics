@@ -1,5 +1,5 @@
 import type { PaymentBehavior } from "@collections/domain";
-import type { DashboardResult, PrioritizeResult, getCustomerContext } from "./handlers";
+import type { DashboardResult, FollowUpProposal, PrioritizeResult, getCustomerContext } from "./handlers";
 
 /** Short, number-rich text for the model. The widget uses structuredContent instead. */
 
@@ -47,4 +47,9 @@ export function summarizeDashboard(r: DashboardResult): string {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+export function summarizeFollowUp(p: FollowUpProposal): string {
+  const promise = p.payload.promiseDate ? ` Promise to pay by ${p.payload.promiseDate}${p.payload.promisedAmount !== undefined ? ` (${p.payload.promisedAmount.toFixed(2)})` : ""}.` : "";
+  return `Proposed follow-up for ${p.customer.name} (${p.customer.number}): "${p.payload.note}".${promise} Nothing is logged yet: the user sends it to the app from the card and confirms there.`;
 }

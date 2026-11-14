@@ -122,10 +122,12 @@ describe("ScriptedAgent against the real MCP server (in-memory)", () => {
     expect((messages.at(-1) as { text: string }).text).toMatch(/You changed it in the app: it's at v2, showing buckets 90\+/);
   });
 
-  it("proposes follow-ups as a card and handles other intents", async () => {
+  it("proposes follow-ups through the tool's widget and handles other intents", async () => {
     const { ag, messages } = await agent({ customerNo: "C-1001" });
     await ag.handle("Log a follow-up: promised to pay SI-104008 by 2026-12-04");
-    expect(messages.at(-1)).toMatchObject({ role: "card", submit: { type: "PowerApps", action: ActionIds.LogFollowUp, actionData: { customerNo: "C-1001", promiseDate: "2026-12-04" } } });
+    const widget = messages.find((m) => m.role === "widget" && m.toolName === "propose_follow_up") as Extract<PaneMessage, { role: "widget" }>;
+    expect(widget.result.structuredContent).toMatchObject({ kind: "followUpProposal", actionId: ActionIds.LogFollowUp, payload: { customerNo: "C-1001", promiseDate: "2026-12-04" } });
+    expect((messages.at(-1) as { text: string }).text).toMatch(/Nothing is logged/);
     await ag.handle("Which customers drive the 90+ bucket?");
     expect((messages.at(-1) as { text: string }).text).toMatch(/Fabrikam/);
     await ag.handle("Tell me about this customer");
