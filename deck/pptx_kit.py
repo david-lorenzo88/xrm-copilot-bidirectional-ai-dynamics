@@ -455,3 +455,35 @@ def text_shadow(shp, from_paragraph=0):
                 rpr.find(qn("a:ln")).addnext(eff)
             else:
                 rpr.insert(0, eff)
+
+
+# --------------------------------------------------------------------------- size
+def optimize_pngs(pptx_path: str, cache_dir: str):
+    """Losslessly recompress every PNG in the package (oxipng), caching results by hash.
+
+    Keeps the deck smaller for download and e-mail; pixels are unchanged.
+    """
+    import hashlib
+    import os
+    import zipfile
+
+    try:
+        import oxipng
+    except ImportError:  # optional dependency
+        print("pyoxipng not installed; skipping PNG optimization")
+        return
+    os.makedirs(cache_dir, exist_ok=True)
+    tmp = pptx_path + ".tmp"
+    with zipfile.ZipFile(pptx_path) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as dst:
+        for info in src.infolist():
+            data = src.read(info.filename)
+            if info.filename.startswith("ppt/media/") and info.filename.lower().endswith(".png"):
+                key = os.path.join(cache_dir, hashlib.sha1(data).hexdigest() + ".png")
+                if not os.path.exists(key):
+                    opt = oxipng.optimize_from_memory(data, level=2)
+                    with open(key, "wb") as fh:
+                        fh.write(opt if len(opt) < len(data) else data)
+                with open(key, "rb") as fh:
+                    data = fh.read()
+            dst.writestr(info.filename, data)
+    os.replace(tmp, pptx_path)

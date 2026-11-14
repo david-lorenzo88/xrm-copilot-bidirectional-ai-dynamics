@@ -18,7 +18,7 @@ from pptx_kit import (  # noqa: E402
     BODY_FONT, BODY_FONT_BOLD, CODE_FONT, DARK_RED, GREY, ICE, INK, MID_GREY, RED, WHITE, YELLOW,
     arrow, box, fix_duplicate_shape_ids, code_panel, drop_revision_parts, drop_slides, duplicate, move,
     notes, picture, remove, remove_empty_placeholders, replace_picture, set_sections, set_text, shape, text,
-    text_shadow,
+    optimize_pngs, text_shadow,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -689,7 +689,8 @@ Change a filter in the app: the PCF updates the spec and the context, and the ag
     drop_revision_parts(prs)
     fix_duplicate_shape_ids(prs)
     prs.save(OUTPUT)
-    print(f"Wrote {OUTPUT} ({len(prs.slides)} slides)")
+    optimize_pngs(OUTPUT, os.path.join(HERE, ".cache", "png"))
+    print(f"Wrote {OUTPUT} ({len(prs.slides)} slides, {os.path.getsize(OUTPUT) / 1e6:.1f} MB)")
 
 
 if __name__ == "__main__":
