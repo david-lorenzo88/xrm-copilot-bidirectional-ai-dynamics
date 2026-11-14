@@ -52,6 +52,23 @@ const FIXTURE_SEED = 20261127;
 const PAYMENT_SIGN = -1;
 const PAYMENT_CHUNK = 50;
 
+// ------------------------------------------------------------------ output helpers
+const tty = process.stderr.isTTY;
+const color = (code, text) => (tty ? `\x1b[${code}m${text}\x1b[0m` : text);
+function die(msg) {
+  console.error(`${color(31, "ERROR")} ${msg}`);
+  process.exit(1);
+}
+const log = (msg) => console.error(`${color(1, "==>")} ${msg}`);
+const ok = (msg) => console.error(` ${color(32, "ok")} ${msg}`);
+const warn = (msg) => console.error(`${color(33, "warn")} ${msg}`);
+const round2 = (n) => Math.round(n * 100) / 100;
+const eur = (n) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const DAY = 86_400_000;
+const addDays = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * DAY).toISOString().slice(0, 10);
+const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / DAY);
+const odataStr = (s) => `'${String(s).replace(/'/g, "''")}'`;
+
 // ------------------------------------------------------------------ args
 const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(name);
@@ -81,21 +98,6 @@ if (!/^[A-Z0-9][A-Z0-9-]{0,7}$/.test(PREFIX)) die("--prefix must be 1-8 characte
 if (!/^[A-Z0-9]{1,10}$/.test(BATCH)) die("--batch must be 1-10 characters A-Z 0-9");
 for (const s of STEPS) if (!["customers", "invoices", "payments"].includes(s)) die(`--steps: unknown step ${s}`);
 if (flag("--item") && flag("--account")) die("Use --item or --account, not both");
-
-// ------------------------------------------------------------------ output helpers
-function die(msg) {
-  console.error(`\x1b[31mERROR\x1b[0m ${msg}`);
-  process.exit(1);
-}
-const log = (msg) => console.error(`\x1b[1m==>\x1b[0m ${msg}`);
-const ok = (msg) => console.error(` \x1b[32mok\x1b[0m ${msg}`);
-const warn = (msg) => console.error(`\x1b[33mwarn\x1b[0m ${msg}`);
-const round2 = (n) => Math.round(n * 100) / 100;
-const eur = (n) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const DAY = 86_400_000;
-const addDays = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * DAY).toISOString().slice(0, 10);
-const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / DAY);
-const odataStr = (s) => `'${String(s).replace(/'/g, "''")}'`;
 
 // ------------------------------------------------------------------ settings
 function loadEnvFile(file) {
@@ -419,8 +421,10 @@ async function main() {
             await patch(`salesInvoices(${inv.id})/salesInvoiceLines(${l.id})`, { unitPrice: round2(p.total / ratio) }, l["@odata.etag"]);
             cur = await get(`salesInvoices(${inv.id})?${select}`);
           }
-          if (cur.dueDate !== p.dueDate || cur.invoiceDate !== p.invoiceDate) {
+          if (cur.invoiceDate !== p.invoiceDate) {
             await patch(`salesInvoices(${inv.id})`, { invoiceDate: p.invoiceDate, postingDate: p.invoiceDate, dueDate: p.dueDate }, cur["@odata.etag"]);
+          } else if (cur.dueDate !== p.dueDate) {
+            await patch(`salesInvoices(${inv.id})`, { dueDate: p.dueDate }, cur["@odata.etag"]);
           }
         } else {
           record("PATCH", `${companyRoot}/salesInvoices(${inv.id}) [only if BC recalculated the dates or VAT changed the total]`, { dueDate: p.dueDate });
@@ -444,6 +448,8 @@ async function main() {
     if (!DRY) {
       const off = plan.invoices.filter((p) => invoiceState.has(p.ext) && Math.abs(invoiceState.get(p.ext).totalAmountIncludingTax - p.total) > 0.05);
       if (off.length) warn(`${off.length} invoices differ from the fixture total by more than 5 cents (VAT rounding); ageing uses BC's amounts.`);
+      const due = plan.invoices.filter((p) => invoiceState.has(p.ext) && invoiceState.get(p.ext).dueDate !== p.dueDate);
+      if (due.length) warn(`${due.length} posted invoices have a different due date than planned (e.g. ${due[0].ext}: ${invoiceState.get(due[0].ext).dueDate} vs ${due[0].dueDate}); ageing would shift. Check whether BC overrides dueDate from payment terms.`);
     }
   } else {
     for (const [ext, inv] of byExt) if (inv.status !== "Draft") invoiceState.set(ext, inv);
@@ -508,7 +514,7 @@ async function main() {
     await addLine(first);
     await postJournal();
     await verifyPaid(first);
-    ok(`canary payment ${first.p.paymentDocNo} closed ${first.p.ext}`);
+    ok(DRY ? `canary: post ${first.p.paymentDocNo} alone, then check ${first.p.ext} is closed before the rest` : `canary payment ${first.p.paymentDocNo} closed ${first.p.ext}`);
   }
   while (pending.length || queued.size) {
     const chunk = pending.splice(0, PAYMENT_CHUNK);
