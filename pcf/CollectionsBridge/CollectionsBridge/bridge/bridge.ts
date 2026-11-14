@@ -28,7 +28,7 @@ export interface BridgeSettings {
 export const DEFAULT_SETTINGS: BridgeSettings = {
   autoOpenPanel: true,
   viewName: "Overdue invoices",
-  analyzePrompt: "Analyze this customer's payment behavior and tell me what to chase today.",
+  analyzePrompt: "Analyze the payment behavior of {customer} and prioritize what to chase today.",
 };
 
 export interface BridgeDeps {

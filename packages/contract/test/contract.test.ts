@@ -178,6 +178,12 @@ describe("context", () => {
     expect(buildGroundedPrompt("Analyze", { ...ctx, dashboardId: ID2, dashboardVersion: 3 })).toContain(`dashboard ${ID2} v3`);
   });
 
+  it("names the customer in plain words when the prompt has a {customer} placeholder", () => {
+    expect(buildGroundedPrompt("Analyze the payment behavior of {customer}.", ctx)).toBe("Analyze the payment behavior of Fabrikam, Inc. (C-1001).");
+    expect(buildGroundedPrompt("Check {customer}.", { ...ctx, dashboardId: ID2, dashboardVersion: 2 })).toBe(`Check Fabrikam, Inc. (C-1001). The open dashboard is ${ID2} (v2).`);
+    expect(buildGroundedPrompt("Check {customer}.", undefined)).toBe("Check this customer.");
+  });
+
   it("extracts the FetchXML entity", () => {
     expect(fetchXmlEntityName(FETCH)).toBe(INVOICE);
     expect(fetchXmlEntityName("<fetch/>")).toBeUndefined();

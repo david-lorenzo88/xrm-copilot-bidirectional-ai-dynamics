@@ -73,12 +73,12 @@ describe("beat 1: context publishing", () => {
 });
 
 describe("beat 2: the agent operates the app", () => {
-  it("sends the analyze prompt to our agent with context embedded", async () => {
+  it("sends the analyze prompt to our agent, naming the customer", async () => {
     const { bridge, copilot } = setup();
     await bridge.setRecord({ customerNo: "C-1001" });
     await bridge.analyze();
     const [prompt, options] = vi.mocked(copilot.sendPromptToM365Copilot).mock.calls[0]!;
-    expect(prompt).toMatch(/Analyze this customer's payment behavior[\s\S]*\[App context\] Customer C-1001 Fabrikam/);
+    expect(prompt).toBe("Analyze the payment behavior of Fabrikam, Inc. (C-1001) and prioritize what to chase today.");
     expect(options).toEqual({ gptId: "T_collections.agent" });
   });
 
