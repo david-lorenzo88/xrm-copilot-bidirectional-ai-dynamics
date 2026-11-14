@@ -167,8 +167,18 @@ flowchart LR
     licensing and checklist slides (31 slides, Open XML SDK validation clean). The recap slides keep the mock-host
     screenshots until the end-to-end run in the tenant.
 
+### 13. Merge and docs from the live tenant
+31. Merged the build into `main` (pull request #1). The CI job never started in this repository (GitHub Actions
+    account/billing block), so the 107 tests were run locally.
+32. Rewrote [demo-script.md](demo-script.md) with the real clicks, prompts and the numbers the tenant shows on the
+    session date, and [production-readiness.md](production-readiness.md) with what the build taught us: per-app Copilot
+    setting and default-agent variable, BC virtual table limits, SSO and secret-less OBO, PCF update and re-bind
+    steps, app-builder caveats, BC seeding gaps and the VERIFY points still open.
+
 ## Still open
 
-- End-to-end run of the three beats in the real app and Copilot pane; real screenshots for the deck.
-- Confirm in the tenant: whether `updateContext` reaches the declarative agent (the prompt carries the context too)
-  and that widget actions reach the app's handlers.
+- End-to-end run of the three beats in the real app and Copilot pane; real screenshots for the deck (v4),
+  a fallback recording and a rehearsal.
+- Confirm in the tenant: whether `updateContext` reaches the declarative agent (the prompt carries the context too),
+  that `sendPromptToM365Copilot` accepts the `T_….declarativeAgent` id, and that widget actions reach the app's handlers.
+- The week of the session: re-verify the GA/preview map. After it: set `DEMO_AS_OF` empty and redeploy.
