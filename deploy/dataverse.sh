@@ -98,10 +98,11 @@ if [[ "$DRY_RUN" == 1 ]]; then
   elif [[ "$(lc "$active")" != "$(lc "$DATAVERSE_URL")" ]]; then warn "active pac profile is ${active}, not ${DATAVERSE_URL}: a live run would stop here"
   else ok "active pac profile ${active}"; fi
 else
-  who=$(pac auth who 2>&1) || die "pac auth who failed. Run: pac auth create --environment ${DATAVERSE_URL}"
+  # `pac org who` prints the Org URL; `pac auth who` does not on every pac version.
+  who=$(pac org who 2>&1) || die "pac org who failed. Run: pac auth create --environment ${DATAVERSE_URL}"
   match=0
   for u in $(grep -oE 'https://[A-Za-z0-9.-]+\.dynamics\.com' <<<"$who" || true); do
-    [[ "$(lc "$u")" == "$(lc "$DATAVERSE_URL")" ]] && match=1
+    [[ "$(lc "${u%/}")" == "$(lc "${DATAVERSE_URL%/}")" ]] && match=1
   done
   if ((match == 0)); then
     die "pac is connected to a different environment:
@@ -218,7 +219,8 @@ if [[ "$PCF_MODE" != skip ]]; then
       ok "${TEMP_SOLUTION} does not exist; pac pcf push will create it (it then holds only this control)"
     fi
     # = dataverse/scripts/solution.sh push, plus --solution-unique-name so the control lands in our solution.
-    (cd "${REPO_ROOT}/pcf/CollectionsBridge" && run pac pcf push --publisher-prefix "$PREFIX" --solution-unique-name "$SOLUTION")
+    # pac takes --solution-unique-name or --publisher-prefix, not both; the solution brings the ppn publisher.
+    (cd "${REPO_ROOT}/pcf/CollectionsBridge" && run pac pcf push --solution-unique-name "$SOLUTION")
     PCF_STATUS="pushed into ${SOLUTION} (via ${TEMP_SOLUTION})"
   else
     proj="${REPO_ROOT}/dataverse/solution/${SOLUTION}"
