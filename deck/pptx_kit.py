@@ -435,3 +435,23 @@ def fix_duplicate_shape_ids(prs):
                 el.set("id", str(next_id))
                 next_id += 1
             seen.add(el.get("id"))
+
+
+def text_shadow(shp, from_paragraph=0):
+    """Soft dark shadow under the text runs, for legibility over busy artwork."""
+    for p in shp.text_frame._txBody.findall(qn("a:p"))[from_paragraph:]:
+        for rpr in p.iter(qn("a:rPr")):
+            for old in rpr.findall(qn("a:effectLst")):
+                rpr.remove(old)
+            eff = etree.fromstring(
+                '<a:effectLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+                '<a:outerShdw blurRad="50800" dist="19050" dir="2700000" algn="tl" rotWithShape="0">'
+                '<a:srgbClr val="000000"><a:alpha val="85000"/></a:srgbClr></a:outerShdw></a:effectLst>')
+            # effectLst goes right after the fill, before highlight/fonts
+            fill = rpr.find(qn("a:solidFill"))
+            if fill is not None:
+                fill.addnext(eff)
+            elif rpr.find(qn("a:ln")) is not None:
+                rpr.find(qn("a:ln")).addnext(eff)
+            else:
+                rpr.insert(0, eff)

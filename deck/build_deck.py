@@ -18,6 +18,7 @@ from pptx_kit import (  # noqa: E402
     BODY_FONT, BODY_FONT_BOLD, CODE_FONT, DARK_RED, GREY, ICE, INK, MID_GREY, RED, WHITE, YELLOW,
     arrow, box, fix_duplicate_shape_ids, code_panel, drop_revision_parts, drop_slides, duplicate, move,
     notes, picture, remove, remove_empty_placeholders, replace_picture, set_sections, set_text, shape, text,
+    text_shadow,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -103,18 +104,21 @@ mock fallback (npm run demo) running in a second browser profile.""")
 
 def s_title(prs):
     s = new(prs, T_SPEAKER)
-    replace_picture(s, 11, os.path.join(ASSETS, "speaker.jpg"))
+    replace_picture(s, 11, os.path.join(ASSETS, "speaker-frame.png"))  # same rounded glow frame as the template
     set_text(shape(s, 33), "David Lorenzo López")
     job = shape(s, 13)
     move(job, w=4.3, h=0.42)
     set_text(job, [{"runs": ["AI & Automation Architect · Prodware"], "size": 12},
                    {"runs": ["Microsoft MVP · Copilot Studio"], "size": 12}])
     title = shape(s, 34)
-    move(title, w=4.45)
+    move(title, w=3.55)  # stay on the dark left panel, clear of the busy artwork
     set_text(title, [{"runs": ["Building the Bridge"], "size": 21},
-                     {"runs": [{"t": "Bidirectional AI between Dynamics 365 and Copilot with Xrm.Copilot",
-                                "b": False, "font": "Roboto"}], "size": 12}])
-    set_text(shape(s, 19), "BC · Power Platform")
+                     {"runs": [{"t": "Bidirectional AI between Dynamics 365", "b": False, "font": "Roboto"}],
+                      "size": 11},
+                     {"runs": [{"t": "and Copilot with Xrm.Copilot", "b": False, "font": "Roboto"}],
+                      "size": 11}])
+    text_shadow(title, from_paragraph=1)
+    set_text(shape(s, 19), "Business Central")
     notes(s, """Hi, I'm David Lorenzo, AI & Automation Architect at Prodware and Microsoft MVP for Copilot Studio.
 Today we build a bridge, live: a model-driven app over Business Central data that shares its state with
 Microsoft 365 Copilot, and an agent that reaches back into the app to open records, filter views and

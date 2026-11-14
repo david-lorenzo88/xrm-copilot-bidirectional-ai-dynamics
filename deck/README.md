@@ -12,7 +12,8 @@ python deck/build_deck.py
 - `build_deck.py`: one function per slide (text, speaker notes, code snippets, diagram).
 - `pptx_kit.py`: helpers to duplicate template slides, replace text while keeping the
   template's formatting, and draw native shapes (code panels, arrows, boxes).
-- `assets/speaker.jpg`, `assets/qr-repo.png`: speaker photo and QR code to this repo.
+- `assets/speaker-frame.png`: speaker photo in the template's rounded glow frame (background
+  replaced; `assets/speaker.jpg` is the plain crop). `assets/qr-repo.png`: QR code to this repo.
 - `assets/screenshots/<name>.png`: demo screenshots. When a file exists it replaces the
   placeholder on the matching recap slide: `beat1-grounded`, `beat2-operate`, `beat3-dashboard`.
 
