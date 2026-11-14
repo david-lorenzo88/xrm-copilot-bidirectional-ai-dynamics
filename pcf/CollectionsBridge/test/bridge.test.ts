@@ -78,7 +78,7 @@ describe("beat 2: the agent operates the app", () => {
     await bridge.setRecord({ customerNo: "C-1001" });
     await bridge.analyze();
     const [prompt, options] = vi.mocked(copilot.sendPromptToM365Copilot).mock.calls[0]!;
-    expect(prompt).toBe("Analyze the payment behavior of Fabrikam, Inc. (C-1001) and prioritize what to chase today.");
+    expect(prompt).toBe("Use the Collections tools to analyze the payment behavior of Fabrikam, Inc. (C-1001) and prioritize what to chase today.");
     expect(options).toEqual({ gptId: "T_collections.agent" });
   });
 

@@ -3,22 +3,46 @@
   "schema_version": "v2.4",
   "name_for_human": "Contoso Collections",
   "description_for_human": "Collections tools over Business Central data (via Dataverse virtual tables), with interactive widgets that also drive the Collections Workspace app.",
+  "description_for_model": "The only source of collections data for this agent: Business Central customers, invoices, payment history, aging and risk, computed live. Use these functions for every question about a customer, an invoice, payment behavior, what to chase, aging or dashboards, including when Work IQ or Dataverse search returns records: those results lack payment history and can belong to other customers. A customer number such as DEMO-C-1001, often in parentheses after the name, is the customerNo argument.",
   "namespace": "contosocollections",
   "functions": [
-    { "name": "get_customer_context", "description": "Customer header, aging summary, risk snapshot and top overdue invoices for one customer." },
-    { "name": "analyze_payment_behavior", "description": "Average days late, trend, risk score and signals for one customer." },
-    { "name": "prioritize_collections", "description": "Ranked chase-today worklist; renders the priority-list widget that opens invoices and the worklist in the app." },
-    { "name": "propose_follow_up", "description": "Proposes a follow-up (note, promise-to-pay date); renders a card the user sends to the app, which confirms before storing it." },
-    { "name": "build_aging_dashboard", "description": "Creates or revises an aging dashboard spec and renders it here and in the app." },
-    { "name": "get_dashboard", "description": "Current spec and data of a stored dashboard (the user may have changed it in the app)." },
-    { "name": "update_dashboard", "description": "Patches a stored dashboard; last write wins." }
+    {
+      "name": "get_customer_context",
+      "description": "Customer header, aging summary, risk snapshot and top overdue invoices for one customer."
+    },
+    {
+      "name": "analyze_payment_behavior",
+      "description": "Average days late, trend, risk score and signals for one customer."
+    },
+    {
+      "name": "prioritize_collections",
+      "description": "Ranked chase-today worklist; renders the priority-list widget that opens invoices and the worklist in the app."
+    },
+    {
+      "name": "propose_follow_up",
+      "description": "Proposes a follow-up (note, promise-to-pay date); renders a card the user sends to the app, which confirms before storing it."
+    },
+    {
+      "name": "build_aging_dashboard",
+      "description": "Creates or revises an aging dashboard spec and renders it here and in the app."
+    },
+    {
+      "name": "get_dashboard",
+      "description": "Current spec and data of a stored dashboard (the user may have changed it in the app)."
+    },
+    {
+      "name": "update_dashboard",
+      "description": "Patches a stored dashboard; last write wins."
+    }
   ],
   "runtimes": [
     {
       "type": "RemoteMCPServer",
       "spec": {
         "url": "${{MCP_SERVER_URL}}",
-        "mcp_tool_description": { "file": "mcp-tools.json" }
+        "mcp_tool_description": {
+          "file": "mcp-tools.json"
+        }
       },
       "auth": {
         "type": "OAuthPluginVault",

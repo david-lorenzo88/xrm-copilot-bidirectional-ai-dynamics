@@ -13,6 +13,9 @@
   "actions": [
     { "id": "collectionsMcp", "file": "ai-plugin.json" }
   ],
+  "behavior_overrides": {
+    "special_instructions": { "discourage_model_knowledge": true }
+  },
   "disclaimer": {
     "text": "Read-only towards Business Central. Follow-ups are written to Dataverse only after you confirm them."
   }
