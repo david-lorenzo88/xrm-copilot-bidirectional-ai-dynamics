@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <control namespace="Contoso" constructor="CollectionsBridge" version="1.0.2"
+           display-name-key="CollectionsBridge_Display_Key" description-key="CollectionsBridge_Desc_Key"
+           control-type="virtual">
+    <external-service-usage enabled="false"></external-service-usage>
+
+    <!-- Bind to the customer number column on the dyn365bc_customer_v2_0 main form. -->
+    <property name="customerNumber" display-name-key="customerNumber_Display_Key" description-key="customerNumber_Desc_Key"
+              of-type="SingleLine.Text" usage="bound" required="true" />
+    <property name="gptId" display-name-key="gptId_Display_Key" description-key="gptId_Desc_Key"
+              of-type="SingleLine.Text" usage="input" required="false" />
+    <property name="autoOpenPanel" display-name-key="autoOpenPanel_Display_Key" description-key="autoOpenPanel_Desc_Key"
+              of-type="TwoOptions" usage="input" required="false" />
+    <property name="viewName" display-name-key="viewName_Display_Key" description-key="viewName_Desc_Key"
+              of-type="SingleLine.Text" usage="input" required="false" />
+    <property name="analyzePrompt" display-name-key="analyzePrompt_Display_Key" description-key="analyzePrompt_Desc_Key"
+              of-type="Multiple" usage="input" required="false" />
+    <property name="worklistViewId" display-name-key="worklistViewId_Display_Key" description-key="worklistViewId_Desc_Key"
+              of-type="SingleLine.Text" usage="input" required="false" />
+
+    <property name="asOfDate" display-name-key="asOfDate_Display_Key" description-key="asOfDate_Desc_Key"
+              of-type="SingleLine.Text" usage="input" required="false" />
+    <resources>
+      <code path="index.ts" order="1" />
+      <!-- VERIFY: pick the newest React/Fluent platform libraries your environment serves
+           (pcf-scripts 1.51 also knows React 18.3.1 and Fluent up to 9.68). The shared
+           components avoid React 18-only APIs so 16.14 works. -->
+      <platform-library name="React" version="16.14.0" />
+      <platform-library name="Fluent" version="9.46.2" />
+      <resx path="strings/CollectionsBridge.1033.resx" version="1.0.0" />
+    </resources>
+
+    <feature-usage>
+      <uses-feature name="WebAPI" required="true" />
+    </feature-usage>
+  </control>
+</manifest>

@@ -1,0 +1,442 @@
+{
+  "tools": [
+    {
+      "name": "get_customer_context",
+      "title": "Get customer context",
+      "description": "Customer header, aging summary, risk snapshot and the top overdue invoices. Call this first when the app context names a customer, or to ground any answer about a customer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerNo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Business Central customer number (e.g. C-1001) or the start of the customer name"
+          },
+          "customerId": {
+            "description": "Dataverse record id of the customer",
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "analyze_payment_behavior",
+      "title": "Analyze payment behavior",
+      "description": "Average days late, trend (improving/stable/worsening), risk score 0–100 and the signals behind it, computed from invoice and payment history.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerNo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Business Central customer number (e.g. C-1001) or the start of the customer name"
+          },
+          "lookbackMonths": {
+            "description": "Default 12",
+            "type": "integer",
+            "minimum": 3,
+            "maximum": 24
+          }
+        },
+        "required": [
+          "customerNo"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "prioritize_collections",
+      "title": "Prioritize collections",
+      "description": "Ranked chase-today worklist of overdue invoices (one customer or all). Renders the priority-list widget, which opens the critical invoices and the worklist in the app.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerNo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Business Central customer number (e.g. C-1001) or the start of the customer name"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "minDaysOverdue": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 365
+          },
+          "applyInApp": {
+            "description": "Open critical invoices and the worklist in the app straight away (default true; navigation only)",
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://collections/priority-list"
+        },
+        "ui/resourceUri": "ui://collections/priority-list"
+      }
+    },
+    {
+      "name": "propose_follow_up",
+      "title": "Propose follow-up",
+      "description": "Proposes logging a collection follow-up (note, promise-to-pay date, amount). Writes nothing: it renders a card the user can send to the app, where they confirm before anything is stored.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerNo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Business Central customer number (e.g. C-1001) or the start of the customer name"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "promiseDate": {
+            "description": "YYYY-MM-DD",
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "promisedAmount": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "customerNo",
+          "note"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://collections/priority-list"
+        },
+        "ui/resourceUri": "ui://collections/priority-list"
+      }
+    },
+    {
+      "name": "build_aging_dashboard",
+      "title": "Build aging dashboard",
+      "description": "Creates (or replaces) a dashboard spec, e.g. overdue by customer and aging bucket, stores it and returns spec + data. Renders the aging-dashboard widget, which also shows it inside the app.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "groupBy": {
+            "type": "array",
+            "items": [
+              {
+                "type": "string",
+                "enum": [
+                  "customer",
+                  "agingBucket",
+                  "salesperson",
+                  "currency"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "customer",
+                  "agingBucket",
+                  "salesperson",
+                  "currency"
+                ]
+              }
+            ],
+            "additionalItems": false,
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "[rows, columns], default [\"customer\",\"agingBucket\"]"
+          },
+          "measures": {
+            "minItems": 1,
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "overdueAmount",
+                "openAmount",
+                "invoiceCount"
+              ]
+            }
+          },
+          "filters": {
+            "type": "object",
+            "properties": {
+              "customerNos": {
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20
+                }
+              },
+              "bucketIds": {
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "minDaysOverdue": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3650
+              },
+              "minAmount": {
+                "type": "number",
+                "minimum": 0
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "topN": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 50
+              }
+            }
+          },
+          "visual": {
+            "type": "string",
+            "enum": [
+              "stackedBar",
+              "table",
+              "both"
+            ]
+          },
+          "dashboardId": {
+            "description": "Pass to revise an existing dashboard",
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://collections/aging-dashboard"
+        },
+        "ui/resourceUri": "ui://collections/aging-dashboard"
+      }
+    },
+    {
+      "name": "get_dashboard",
+      "title": "Get dashboard",
+      "description": "Current spec and data of a stored dashboard. Use it when the app context carries a dashboardId: the user may have changed filters in the app.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dashboardId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+          }
+        },
+        "required": [
+          "dashboardId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://collections/aging-dashboard"
+        },
+        "ui/resourceUri": "ui://collections/aging-dashboard"
+      }
+    },
+    {
+      "name": "update_dashboard",
+      "title": "Update dashboard",
+      "description": "Patches a stored dashboard (title, grouping, visual; `filters` replaces the whole filter set). Last write wins; the version increments. Also called by the widget when the user changes a filter.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dashboardId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "patch": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "groupBy": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "customer",
+                      "agingBucket",
+                      "salesperson",
+                      "currency"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "customer",
+                      "agingBucket",
+                      "salesperson",
+                      "currency"
+                    ]
+                  }
+                ],
+                "additionalItems": false,
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "[rows, columns], default [\"customer\",\"agingBucket\"]"
+              },
+              "measures": {
+                "minItems": 1,
+                "maxItems": 3,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "overdueAmount",
+                    "openAmount",
+                    "invoiceCount"
+                  ]
+                }
+              },
+              "filters": {
+                "type": "object",
+                "properties": {
+                  "customerNos": {
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 20
+                    }
+                  },
+                  "bucketIds": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "minDaysOverdue": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3650
+                  },
+                  "minAmount": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3
+                  },
+                  "topN": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  }
+                }
+              },
+              "visual": {
+                "type": "string",
+                "enum": [
+                  "stackedBar",
+                  "table",
+                  "both"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "dashboardId",
+          "patch"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://collections/aging-dashboard"
+        },
+        "ui/resourceUri": "ui://collections/aging-dashboard"
+      }
+    }
+  ]
+}

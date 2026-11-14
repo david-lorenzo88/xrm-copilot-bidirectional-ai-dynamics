@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CollectionsBridge_Display_Key" xml:space="preserve">
+    <value>Collections Copilot bridge</value>
+  </data>
+  <data name="CollectionsBridge_Desc_Key" xml:space="preserve">
+    <value>Shares the customer and view with Microsoft 365 Copilot and handles the Collections agent's actions.</value>
+  </data>
+  <data name="customerNumber_Display_Key" xml:space="preserve">
+    <value>Customer number</value>
+  </data>
+  <data name="customerNumber_Desc_Key" xml:space="preserve">
+    <value>Bind to the BC customer number column.</value>
+  </data>
+  <data name="gptId_Display_Key" xml:space="preserve">
+    <value>Agent id (gptId)</value>
+  </data>
+  <data name="gptId_Desc_Key" xml:space="preserve">
+    <value>Declarative agent that sendPromptToM365Copilot targets.</value>
+  </data>
+  <data name="autoOpenPanel_Display_Key" xml:space="preserve">
+    <value>Open Copilot on load</value>
+  </data>
+  <data name="autoOpenPanel_Desc_Key" xml:space="preserve">
+    <value>Open the Microsoft 365 Copilot panel once context is published.</value>
+  </data>
+  <data name="viewName_Display_Key" xml:space="preserve">
+    <value>View name</value>
+  </data>
+  <data name="viewName_Desc_Key" xml:space="preserve">
+    <value>Name of the view reported to Copilot (default: Overdue invoices).</value>
+  </data>
+  <data name="analyzePrompt_Display_Key" xml:space="preserve">
+    <value>Analyze prompt</value>
+  </data>
+  <data name="analyzePrompt_Desc_Key" xml:space="preserve">
+    <value>Prompt sent by the Analyze payment behavior button.</value>
+  </data>
+  <data name="asOfDate_Display_Key" xml:space="preserve">
+    <value>Demo date</value>
+  </data>
+  <data name="asOfDate_Desc_Key" xml:space="preserve">
+    <value>Optional YYYY-MM-DD used as today for ageing (rehearsals). Empty = the real date.</value>
+  </data>
+  <data name="worklistViewId_Display_Key" xml:space="preserve">
+    <value>Worklist view id</value>
+  </data>
+  <data name="worklistViewId_Desc_Key" xml:space="preserve">
+    <value>Optional saved view (GUID) to switch to when the agent shows the worklist.</value>
+  </data>
+</root>

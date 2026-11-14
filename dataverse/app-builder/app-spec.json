@@ -1,0 +1,454 @@
+{
+  "solution": {
+    "uniqueName": "CollectionsWorkspace",
+    "displayName": "Collections Workspace",
+    "publisherPrefix": "ppn"
+  },
+  "app": {
+    "name": "Collections Workspace",
+    "description": "Chase overdue invoices on live Business Central data, side by side with the Collections agent in Microsoft 365 Copilot.",
+    "aiDescription": "For finance collections specialists. Covers Business Central customers and posted sales invoices (read live through virtual tables), overdue worklists, aging dashboards shared with the Collections agent, and confirmed follow-ups. Excludes sales, purchasing and anything that writes to Business Central.",
+    "mainForms": {
+      "dyn365bc_customer_v2_0": [
+        "Collections customer"
+      ]
+    }
+  },
+  "entities": [
+    {
+      "schemaName": "dyn365bc_customer_v2_0",
+      "displayName": "Customer (Business Central)",
+      "pluralName": "Customers (Business Central)",
+      "existing": true,
+      "description": "Business Central customers, read live through the BC virtual table. Never written by this app.",
+      "primaryAttribute": {
+        "schemaName": "dyn365bc_displayname",
+        "displayName": "Display name"
+      },
+      "columns": []
+    },
+    {
+      "schemaName": "dyn365bc_salesinvoice_v2_0",
+      "displayName": "Sales invoice (Business Central)",
+      "pluralName": "Sales invoices (Business Central)",
+      "existing": true,
+      "description": "Business Central sales invoices, read live through the BC virtual table; the source of every overdue worklist.",
+      "primaryAttribute": {
+        "schemaName": "dyn365bc_number",
+        "displayName": "No."
+      },
+      "columns": []
+    },
+    {
+      "schemaName": "ppn_collectiondashboard",
+      "displayName": "Collection dashboard",
+      "pluralName": "Collection dashboards",
+      "description": "Shared state between the Collections agent, its Copilot widget and the app: one aging-dashboard spec (JSON) per row; last write wins on Version.",
+      "iconDescription": "a bar chart with three ascending bars and a small clock in the corner",
+      "primaryAttribute": {
+        "schemaName": "ppn_name",
+        "displayName": "Name",
+        "maxLength": 200
+      },
+      "columns": [
+        {
+          "schemaName": "ppn_specjson",
+          "displayName": "Spec (JSON)",
+          "type": "Memo",
+          "maxLength": 100000,
+          "description": "DashboardSpec v1 as JSON (packages/contract/src/dashboard.ts); written by the agent's tool and by the PCF."
+        },
+        {
+          "schemaName": "ppn_version",
+          "displayName": "Version",
+          "type": "Integer",
+          "minValue": 1,
+          "maxValue": 2147483647,
+          "description": "Monotonic revision of the spec; the higher version wins when the agent and the app both edit."
+        },
+        {
+          "schemaName": "ppn_customerno",
+          "displayName": "Customer number",
+          "type": "Text",
+          "maxLength": 20,
+          "description": "Business Central customer number when the dashboard is scoped to one customer; empty for portfolio dashboards."
+        }
+      ]
+    },
+    {
+      "schemaName": "ppn_collectionaction",
+      "displayName": "Collection action",
+      "pluralName": "Collection actions",
+      "description": "Audit trail of every agent action the app handled, rejected or failed, plus follow-ups (promises to pay) the specialist confirmed. Never written to Business Central.",
+      "iconDescription": "a clipboard with a check mark and a small speech bubble",
+      "primaryAttribute": {
+        "schemaName": "ppn_name",
+        "displayName": "Name",
+        "maxLength": 200
+      },
+      "columns": [
+        {
+          "schemaName": "ppn_actionid",
+          "displayName": "Action id",
+          "type": "Text",
+          "maxLength": 100,
+          "description": "Bridge action that triggered the row, e.g. Contoso.Collections.LogFollowUp."
+        },
+        {
+          "schemaName": "ppn_customerno",
+          "displayName": "Customer number",
+          "type": "Text",
+          "maxLength": 20,
+          "description": "Business Central customer number the action was about."
+        },
+        {
+          "schemaName": "ppn_payloadjson",
+          "displayName": "Payload (JSON)",
+          "type": "Memo",
+          "maxLength": 100000,
+          "description": "Validated action payload as received from the agent, kept for audit."
+        },
+        {
+          "schemaName": "ppn_note",
+          "displayName": "Note",
+          "type": "Memo",
+          "maxLength": 4000,
+          "description": "Specialist's note for a follow-up, e.g. what the customer promised on the call."
+        },
+        {
+          "schemaName": "ppn_promisedate",
+          "displayName": "Promise-to-pay date",
+          "type": "DateTime",
+          "description": "Date the customer promised to pay; drives the next follow-up."
+        },
+        {
+          "schemaName": "ppn_promisedamount",
+          "displayName": "Promised amount",
+          "type": "Decimal",
+          "precision": 2,
+          "minValue": 0,
+          "maxValue": 100000000000,
+          "description": "Amount the customer promised to pay, in the invoice currency."
+        },
+        {
+          "schemaName": "ppn_outcome",
+          "displayName": "Outcome",
+          "type": "Text",
+          "maxLength": 20,
+          "description": "handled | rejected | cancelled | failed | confirmed: how the app dealt with the action."
+        },
+        {
+          "schemaName": "ppn_source",
+          "displayName": "Source",
+          "type": "Text",
+          "maxLength": 20,
+          "description": "agent | user: who initiated the action."
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "type": "OneToMany",
+      "referenced": "dyn365bc_customer_v2_0",
+      "referencing": "dyn365bc_salesinvoice_v2_0",
+      "schemaName": "dyn365bc_customer_salesinvoices",
+      "existing": true,
+      "lookup": {
+        "schemaName": "dyn365bc_customer_customerid",
+        "displayName": "Customer"
+      }
+    }
+  ],
+  "views": [
+    {
+      "entity": "dyn365bc_salesinvoice_v2_0",
+      "name": "Overdue invoices",
+      "description": "Posted invoices past their due date that are still open (BC status Open; remainingAmount is not filterable on the virtual table): the list a collections specialist starts from and the view the PCF publishes to Copilot as context.",
+      "columns": [
+        "dyn365bc_number",
+        "dyn365bc_customername",
+        "dyn365bc_duedate",
+        "dyn365bc_remainingamount",
+        "dyn365bc_totalamountincludingtax",
+        "dyn365bc_currencycode"
+      ],
+      "sort": [
+        {
+          "attr": "dyn365bc_duedate",
+          "dir": "asc"
+        }
+      ],
+      "activeOnly": false,
+      "filters": [
+        {
+          "attr": "dyn365bc_duedate",
+          "op": "olderthan-x-days",
+          "value": "1"
+        },
+        {
+          "attr": "dyn365bc_status",
+          "op": "eq",
+          "value": "Open"
+        },
+        {
+          "attr": "dyn365bc_customernumber",
+          "op": "like",
+          "value": "DEMO-C-%"
+        }
+      ]
+    },
+    {
+      "entity": "dyn365bc_customer_v2_0",
+      "name": "Customers with balance",
+      "description": "Customers that owe money, largest balance first: where a specialist picks who to open.",
+      "columns": [
+        "dyn365bc_displayname",
+        "dyn365bc_number",
+        "dyn365bc_balancedue",
+        "dyn365bc_creditlimit",
+        "dyn365bc_city"
+      ],
+      "sort": [
+        {
+          "attr": "dyn365bc_balancedue",
+          "dir": "desc"
+        }
+      ],
+      "activeOnly": false,
+      "filters": [
+        {
+          "attr": "dyn365bc_balancedue",
+          "op": "gt",
+          "value": "0"
+        },
+        {
+          "attr": "dyn365bc_number",
+          "op": "like",
+          "value": "DEMO-C-%"
+        }
+      ]
+    },
+    {
+      "entity": "ppn_collectiondashboard",
+      "name": "Recent dashboards",
+      "description": "Dashboards built by the agent or edited in the app, newest first.",
+      "columns": [
+        "ppn_name",
+        "ppn_customerno",
+        "ppn_version",
+        "modifiedon"
+      ],
+      "sort": [
+        {
+          "attr": "modifiedon",
+          "dir": "desc"
+        }
+      ]
+    },
+    {
+      "entity": "ppn_collectionaction",
+      "name": "Confirmed follow-ups",
+      "description": "Promises to pay the specialist confirmed, by promise date: tomorrow's call list.",
+      "columns": [
+        "ppn_name",
+        "ppn_customerno",
+        "ppn_promisedate",
+        "ppn_promisedamount",
+        "ppn_note"
+      ],
+      "sort": [
+        {
+          "attr": "ppn_promisedate",
+          "dir": "asc"
+        }
+      ],
+      "filters": [
+        {
+          "attr": "ppn_outcome",
+          "op": "eq",
+          "value": "confirmed"
+        }
+      ]
+    },
+    {
+      "entity": "ppn_collectionaction",
+      "name": "Agent action log",
+      "description": "Every agent action the app received, newest first, including rejected ones: the audit trail for governance.",
+      "columns": [
+        "ppn_name",
+        "ppn_actionid",
+        "ppn_outcome",
+        "ppn_source",
+        "ppn_customerno",
+        "createdon"
+      ],
+      "sort": [
+        {
+          "attr": "createdon",
+          "dir": "desc"
+        }
+      ]
+    }
+  ],
+  "forms": [
+    {
+      "entity": "dyn365bc_customer_v2_0",
+      "type": "main",
+      "name": "Collections customer",
+      "description": "Customer record for collections specialists: the CollectionsBridge PCF (bound to the customer number) publishes this customer to Copilot and handles the agent's actions; below it, the live BC profile and overdue invoices.",
+      "tabs": [
+        {
+          "name": "tab_collections",
+          "label": "Collections",
+          "sections": [
+            {
+              "name": "sec_bridge",
+              "label": "Collections bridge",
+              "columns": 1,
+              "fields": [
+                "dyn365bc_number"
+              ]
+            },
+            {
+              "name": "sec_customer",
+              "label": "Customer (Business Central)",
+              "columns": 2,
+              "fields": [
+                "dyn365bc_displayname",
+                "dyn365bc_city",
+                "dyn365bc_balancedue",
+                "dyn365bc_creditlimit",
+                "dyn365bc_currencycode",
+                "dyn365bc_salespersoncode"
+              ]
+            }
+          ]
+        }
+      ],
+      "subgrids": [
+        {
+          "childEntity": "dyn365bc_salesinvoice_v2_0",
+          "view": "Overdue invoices",
+          "label": "Overdue invoices",
+          "tab": "tab_collections"
+        }
+      ]
+    },
+    {
+      "entity": "ppn_collectiondashboard",
+      "type": "main",
+      "name": "Collection dashboard",
+      "layout": "auto",
+      "description": "Inspect a shared dashboard spec (normally edited through the agent or the PCF)."
+    },
+    {
+      "entity": "ppn_collectionaction",
+      "type": "main",
+      "name": "Collection action",
+      "layout": "auto",
+      "description": "Review one audited agent action or confirmed follow-up."
+    }
+  ],
+  "appShell": {
+    "areas": [
+      {
+        "label": "Collections",
+        "groups": [
+          {
+            "label": "Business Central",
+            "subAreas": [
+              {
+                "entity": "dyn365bc_customer_v2_0",
+                "title": "Customers"
+              },
+              {
+                "entity": "dyn365bc_salesinvoice_v2_0",
+                "title": "Overdue invoices"
+              }
+            ]
+          },
+          {
+            "label": "Agent",
+            "subAreas": [
+              {
+                "entity": "ppn_collectiondashboard",
+                "title": "Dashboards"
+              },
+              {
+                "entity": "ppn_collectionaction",
+                "title": "Follow-ups & audit"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "personas": [
+    {
+      "persona": "Collections Specialist",
+      "jobs": [
+        {
+          "name": "Find who to chase today",
+          "surfaces": [
+            "Customers with balance",
+            "Overdue invoices"
+          ],
+          "privileges": [
+            {
+              "entity": "dyn365bc_customer_v2_0",
+              "access": [
+                "read"
+              ],
+              "scope": "organization"
+            },
+            {
+              "entity": "dyn365bc_salesinvoice_v2_0",
+              "access": [
+                "read"
+              ],
+              "scope": "organization"
+            }
+          ]
+        },
+        {
+          "name": "Build and share aging dashboards with the agent",
+          "surfaces": [
+            "Recent dashboards",
+            "Collection dashboard"
+          ],
+          "privileges": [
+            {
+              "entity": "ppn_collectiondashboard",
+              "access": [
+                "create",
+                "read",
+                "write"
+              ],
+              "scope": "user"
+            }
+          ]
+        },
+        {
+          "name": "Confirm follow-ups the agent proposes",
+          "surfaces": [
+            "Confirmed follow-ups",
+            "Agent action log",
+            "Collection action"
+          ],
+          "privileges": [
+            {
+              "entity": "ppn_collectionaction",
+              "access": [
+                "create",
+                "read"
+              ],
+              "scope": "user"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

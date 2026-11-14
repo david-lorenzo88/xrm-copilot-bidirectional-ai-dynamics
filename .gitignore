@@ -1,0 +1,46 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+out/
+coverage/
+*.tsbuildinfo
+
+# PCF / solution build artefacts
+pcf/**/out/
+pcf/**/obj/
+pcf/**/bin/
+dataverse/solution/**/bin/
+dataverse/solution/**/obj/
+dataverse/**/*.zip
+
+# Agents Toolkit
+agent/appPackage/build/
+agent/env/.env.*.user
+agent/.localConfigs*
+
+# env & secrets
+.env
+.env.*
+!.env.example
+!agent/env/.env.dev
+*.pem
+*.pfx
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.log
+
+# tenant-specific deployment settings
+deploy/tenant.env
+
+# app-builder build state (environment-specific)
+dataverse/app-builder/.maker-workspace/
+
+# tenant-specific agent values written by deploy/agent.mjs
+agent/env/.env.*.local

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/declarative-agent/v1.5/schema.json",
+  "version": "v1.5",
+  "name": "Collections",
+  "description": "Collections specialist for Contoso. Uses the app context from Collections Workspace, computes every number with its tools, and drives the app through bridge actions.",
+  "instructions": "$[file('instruction.txt')]",
+  "conversation_starters": [
+    { "title": "Analyze this customer", "text": "Analyze this customer's payment behavior and tell me what to chase today." },
+    { "title": "Chase list", "text": "Prioritize today's collections across all customers." },
+    { "title": "Aging dashboard", "text": "Build me a dashboard of overdue by customer and aging bucket." },
+    { "title": "90+ drivers", "text": "Which customers drive the 90+ bucket, and what should I do about them?" }
+  ],
+  "actions": [
+    { "id": "collectionsMcp", "file": "ai-plugin.json" }
+  ],
+  "disclaimer": {
+    "text": "Read-only towards Business Central. Follow-ups are written to Dataverse only after you confirm them."
+  }
+}
