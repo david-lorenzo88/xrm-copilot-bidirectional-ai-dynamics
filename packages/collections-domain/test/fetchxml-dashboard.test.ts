@@ -20,8 +20,10 @@ describe("FetchXML builders", () => {
   });
 
   it("builds the overdue view filter", () => {
-    const xml = buildOverdueInvoicesFetchXml({ asOf: FIXTURE_AS_OF, customerNo: "C-1001", top: 50 });
-    expect(xml).toMatch(/^<fetch top="50"><entity name="dyn365bc_salesinvoice_v2_0">/);
+    const xml = buildOverdueInvoicesFetchXml({ asOf: FIXTURE_AS_OF, customerNo: "C-1001" });
+    // No top: the BC virtual table provider returns a single row for any FetchXML top.
+    expect(xml).toMatch(/^<fetch><entity name="dyn365bc_salesinvoice_v2_0">/);
+    expect(xml).toContain(`operator="eq" value="200000003"`); // status Open; remainingAmount isn't filterable
     expect(xml).toContain('operator="on-or-before" value="2026-11-26"');
     expect(xml).toContain('<condition attribute="dyn365bc_customernumber" operator="eq" value="C-1001"/>');
     expect(fetchXmlEntityName(xml)).toBe(WORKLIST_ENTITIES[0]);
@@ -36,7 +38,9 @@ describe("FetchXML builders", () => {
   it("builds the prioritised worklist", () => {
     const xml = buildPrioritizedWorklistFetchXml([ID]);
     expect(xml).toContain(`<condition attribute="${BC_TABLES.salesInvoice.columns.id}" operator="in"><value>${ID}</value></condition>`);
-    expect(xml).toContain('descending="true"');
+    // Ordered by due date (remainingAmount can't be used for ordering on the BC virtual table); no top.
+    expect(xml).toContain(`<order attribute="${BC_TABLES.salesInvoice.columns.dueDate}"/>`);
+    expect(xml).not.toContain("top=");
     expect(() => buildPrioritizedWorklistFetchXml([])).toThrow(RangeError);
   });
 });
