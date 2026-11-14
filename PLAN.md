@@ -148,34 +148,63 @@ Demo-safety: the PCF has a `?mock=1` mode that uses `/mock` (a fake `Xrm.Copilot
 
 Deck work (7) can start in parallel after Phase 0, using placeholders for screenshots.
 
+### 4.1 Compressed calendar (session is Fri 27 Nov 2026)
+
+| Dates | Focus |
+|---|---|
+| Nov 14–15 | Deck v1 from template (no screenshots). Repo scaffolding, contract, shared UI package, mock mode |
+| Nov 16–17 | Phase 0 tenant spike + environment (BC sandbox, virtual tables, seed data) |
+| Nov 18–20 | MCP server + widgets, declarative agent |
+| Nov 21–23 | PCF + model-driven app, beats 1–3 end to end |
+| Nov 24–25 | Hardening, record fallback videos, screenshots into deck v2 |
+| Nov 26 | Re-verify GA/preview map, final rehearsal, freeze |
+
+Scope cut if the spike slips: `LogFollowUp` and the Copilot Studio bonus are dropped first. Beat 3 then falls back to rendering the dashboard in-app only.
+
 ---
 
-## 5. Deck outline (draft, about 22 slides, adjust to slot length)
+## 5. Deck: built on `AIERP_Summit_2026_Template.pptx`
 
-1. Title: *Building the Bridge*
-2. The side-panel era: AI that couldn't touch the app
-3. The wall comes down: app ⇄ agent, shared state
-4. Scenario: collections for finance teams, live ERP data via BC virtual tables
-5. **Demo 1**: grounded from the first message
-6. **Demo 2**: the agent operates the app
-7. **Demo 3**: generative UI on two surfaces
-8. Architecture at a glance (diagram from §2)
-9. The `Xrm.Copilot` surface: map of every method (GA/preview badges)
-10. App → agent: `updateContext` + `sendPromptToM365Copilot` (code)
-11. Agent → app: actions, built-ins vs. custom, `addActionHandler` (code)
-12. The bridge contract: actions + context schema
-13. The PCF control: lifecycle, handlers, side panes
-14. Declarative agent: instructions + MCP plugin
-15. MCP Apps server: tools, `ui://` widgets, postMessage to the app
-16. Shared state: the dashboard spec, sync loop, what can't be pushed (yet)
-17. Agents on ERP data: BC virtual tables, what to compute where
-18. Generative UI in model-driven apps: patterns and guardrails
-19. What's GA / what's preview / when to use each
-20. Licensing & prerequisites
-21. Production readiness checklist: licensing, governance, security, ALM, gotchas
-22. Takeaways + repo link / Q&A
+### 5.1 Template facts
+- 16:9 (13.33" × 7.5"), 19 sample slides, LEGO-brick visual language. The palette is red `D01012` / dark red `750909` / yellow `FFD100` / ice blue `C9F2F8`, on white or brick-texture backgrounds.
+- Fonts: **Segoe UI** for body and **Roboto Bold** for headings. Neither is installed in this container, so render QA here is approximate. Leave about 10% text slack and do a final check in real PowerPoint.
+- Event: D365 Community Summit / AI ERP Summit, **27 November 2026, Lisbon**. That is **13 days from today**, so the schedule in §4 has to be compressed (see §4.1).
+- No code or diagram layout exists. Code and architecture slides go on the plain white "Title" slide (`slide7`) with our own dark code panel and diagram images, styled in the template palette.
+- About 20 MB of media. Unused sample slides are removed with `clean.py` so the output stays lean.
 
-Each slide gets speaker notes. The code slides use real snippets from the repo.
+### 5.2 Build approach
+Use template editing, not a from-scratch generator: unzip → duplicate the chosen sample slides → replace text in the slide XML → clean → zip → validate (`--original` template) → render to images for QA. The content lives in `deck/content.yaml` (titles, body text, speaker notes), and a script in `deck/` builds the slides from it. Re-running the build after every content change keeps the deck reproducible. Screenshots of the real app replace placeholders as Phase 5 lands.
+
+### 5.3 Slide-by-slide mapping (about 24 slides, roughly 45 min with live demo; adjust to slot)
+
+| # | Slide | Template slide | Notes |
+|---|---|---|---|
+| 0 | Walk-in / holding | `slide4` (Summit splash) | Unchanged |
+| 1 | Title + speaker | `slide2` (speaker card) | Session title, name, photo, track "Business Central / Power Platform" |
+| 2 | The side-panel era | `slide14` (statement card) | "AI lived next to the app, not in it" |
+| 3 | The wall comes down | `slide15` (red text + 3 round icons) | Share context · Ask · Act |
+| 4 | Agenda | `slide19` (title + 3 icon columns) | Demo · Architecture · Production |
+| 5 | Scenario | `slide6` "Business Central" (3 cards) | Customers · Invoices · Ledger entries, all live via virtual tables |
+| 6 | **Section: Live demo** | `slide8` (title on brick wall) | |
+| 7 | Three demo beats | `slide10` (red panel + 3 rows) | Grounded start · Agent operates the app · Generative UI |
+| 8–10 | Demo beat 1 / 2 / 3 recap | `slide7` (white Title) + screenshot | Doubles as fallback if the live demo fails |
+| 11 | **Section: Architecture** | `slide9` (Title + Section 1/Section 2) | "One experience, two surfaces: App │ Copilot" |
+| 12 | Architecture at a glance | `slide7` + diagram | Diagram from §2, redrawn in template palette |
+| 13 | The three building blocks | `slide5` (3 cards) | PCF · Declarative agent · MCP Apps server |
+| 14 | The `Xrm.Copilot` map | `slide13` (5 icon rows) | Availability · Panel & prompt · Context · Actions · Copilot Studio (preview) |
+| 15 | App → agent (code) | `slide7` + code panel | `updateContext` + `sendPromptToM365Copilot` |
+| 16 | Agent → app (code) | `slide7` + code panel | `addActionHandler`, built-in vs custom, widget `postMessage` |
+| 17 | The bridge contract | `slide16` (4 yellow columns) | OpenInvoices · ShowWorklist · RenderDashboard · LogFollowUp |
+| 18 | Shared state loop | `slide17` (circular hub, 6 nodes) | Spec → widget → action → PCF → updateContext → agent |
+| 19 | Agents on ERP data | `slide11` (3 cards + image) | Virtual tables, compute in the MCP server, read-only to ERP |
+| 20 | **Section: Production** | `slide8` | |
+| 21 | GA vs Preview vs Check-before-you-ship | `slide18` (3 yellow columns) | Dated "verified on" stamp |
+| 22 | Licensing & prerequisites | `slide12` (title + 3 icon columns) | Users · Environment · Data |
+| 23 | Production-readiness checklist | `slide13` (5 icon rows) | Licensing · Governance · Security · ALM · Gotchas |
+| 24 | Key takeaways | `slide15` | The five takeaways from the abstract |
+| 25 | Thank you + sponsors | `slide3` | Add repo link / QR |
+
+Not used: `slide1` (the template's own cover). Every slide gets speaker notes, and code slides use real snippets from the repo.
 
 ---
 
