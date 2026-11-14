@@ -32,7 +32,7 @@ export function createApp({ config, widgets, widgetStatus }: AppOptions) {
   const repositoryFor = (caller: Caller | undefined): CollectionsRepository => {
     if (config.DATA_MODE === "mock") return mock;
     const client = new DataverseClient({ url: config.DATAVERSE_URL!, getToken: () => obo!(caller!.token) });
-    return new DataverseRepository(client, { customerNumberPrefix: config.CUSTOMER_NUMBER_PREFIX });
+    return new DataverseRepository(client, { customerNumberPrefix: config.CUSTOMER_NUMBER_PREFIX, demoAsOf: config.DEMO_AS_OF });
   };
 
   const resourceMetadataUrl = `${config.PUBLIC_BASE_URL ?? ""}/.well-known/oauth-protected-resource`;

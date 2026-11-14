@@ -48,6 +48,12 @@
   <data name="analyzePrompt_Desc_Key" xml:space="preserve">
     <value>Prompt sent by the Analyze payment behavior button.</value>
   </data>
+  <data name="asOfDate_Display_Key" xml:space="preserve">
+    <value>Demo date</value>
+  </data>
+  <data name="asOfDate_Desc_Key" xml:space="preserve">
+    <value>Optional YYYY-MM-DD used as today for ageing (rehearsals). Empty = the real date.</value>
+  </data>
   <data name="worklistViewId_Display_Key" xml:space="preserve">
     <value>Worklist view id</value>
   </data>

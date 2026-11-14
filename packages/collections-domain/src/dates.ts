@@ -20,6 +20,15 @@ export function formatIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/**
+ * "Today" for ageing: a configured demo date (YYYY-MM-DD) when set and valid, else the real date.
+ * Lets rehearsals show the session-day picture (overdue days, buckets) before the session.
+ */
+export function resolveAsOf(demoAsOf?: string | null, now: Date = new Date()): string {
+  const d = demoAsOf?.trim();
+  return d && /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(Date.parse(`${d}T00:00:00Z`)) ? d : formatIsoDate(now);
+}
+
 /** `YYYY-MM` month key. */
 export function monthKey(date: string): string {
   return date.slice(0, 7);

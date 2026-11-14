@@ -77,6 +77,8 @@ const params = [
   `<gptId static="true" type="SingleLine.Text">${gptId}</gptId>`,
   `<autoOpenPanel static="true" type="TwoOptions">true</autoOpenPanel>`,
   `<viewName static="true" type="SingleLine.Text">Overdue invoices</viewName>`,
+  // Demo date from deploy/tenant.env (DEMO_AS_OF); empty = the real date.
+  ...(env.DEMO_AS_OF ? [`<asOfDate static="true" type="SingleLine.Text">${env.DEMO_AS_OF}</asOfDate>`] : []),
 ].join("");
 const description =
   `<controlDescription forControl="${uniqueid}">` +

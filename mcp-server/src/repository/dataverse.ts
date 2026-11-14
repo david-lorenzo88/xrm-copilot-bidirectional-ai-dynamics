@@ -1,5 +1,5 @@
 import { DashboardSpec, isNewerSpec } from "@collections/contract";
-import { BC_INVOICE_STATUS_OPEN, BC_TABLES, LOCAL_TABLES, formatIsoDate, rowToCustomer, rowToInvoice, type Customer, type Invoice } from "@collections/domain";
+import { BC_INVOICE_STATUS_OPEN, BC_TABLES, LOCAL_TABLES, resolveAsOf, rowToCustomer, rowToInvoice, type Customer, type Invoice } from "@collections/domain";
 import { DataverseClient, DataverseError, odataString, type Row } from "./dataverse-client";
 import type { CollectionsRepository, InvoiceQuery } from "./types";
 
@@ -23,7 +23,7 @@ export class DataverseRepository implements CollectionsRepository {
   constructor(
     private readonly client: DataverseClient,
     /** customerNumberPrefix scopes every BC read (e.g. "DEMO-C-" for the seeded demo customers). */
-    private readonly options: { customerNumberPrefix?: string } = {},
+    private readonly options: { customerNumberPrefix?: string; demoAsOf?: string } = {},
   ) {}
 
   private scope(column: string): string[] {
@@ -32,7 +32,7 @@ export class DataverseRepository implements CollectionsRepository {
   }
 
   asOf(): string {
-    return formatIsoDate(new Date());
+    return resolveAsOf(this.options.demoAsOf);
   }
 
   async listCustomers(): Promise<Customer[]> {

@@ -254,6 +254,8 @@ ENV_VARS=(
 )
 # Optional: scope BC reads to the seeded demo customers (deploy/tenant.env).
 [[ -n "${CUSTOMER_NUMBER_PREFIX:-}" ]] && ENV_VARS+=("CUSTOMER_NUMBER_PREFIX=${CUSTOMER_NUMBER_PREFIX}")
+# Optional demo date ("today" for ageing). An empty value clears it, back to the real date.
+[[ -v DEMO_AS_OF ]] && ENV_VARS+=("DEMO_AS_OF=${DEMO_AS_OF}")
 log "Container App ${CA_NAME} (external ingress :${PORT}, min replicas 1)"
 if [[ -z "$(try_query "" az containerapp show -g "$RG" -n "$CA_NAME" --query id -o tsv)" ]]; then
   # The AcrPull assignment can take a minute to propagate: retry the first pull.

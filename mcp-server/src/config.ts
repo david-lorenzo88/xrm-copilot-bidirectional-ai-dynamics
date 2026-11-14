@@ -28,6 +28,8 @@ const Env = z
     DATAVERSE_URL: z.url().optional(),
     /** Optional: only BC customers whose number starts with this (e.g. DEMO-C- for the seeded demo data). */
     CUSTOMER_NUMBER_PREFIX: z.string().optional(),
+    /** Optional demo date (YYYY-MM-DD) used as "today" for ageing, e.g. 2026-11-27 for rehearsals. */
+    DEMO_AS_OF: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("").transform(() => undefined)),
   })
   .superRefine((env, ctx) => {
     if (env.DATA_MODE === "dataverse") {

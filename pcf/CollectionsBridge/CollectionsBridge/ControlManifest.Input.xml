@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="Contoso" constructor="CollectionsBridge" version="1.0.1"
+  <control namespace="Contoso" constructor="CollectionsBridge" version="1.0.2"
            display-name-key="CollectionsBridge_Display_Key" description-key="CollectionsBridge_Desc_Key"
            control-type="virtual">
     <external-service-usage enabled="false"></external-service-usage>
@@ -19,6 +19,8 @@
     <property name="worklistViewId" display-name-key="worklistViewId_Display_Key" description-key="worklistViewId_Desc_Key"
               of-type="SingleLine.Text" usage="input" required="false" />
 
+    <property name="asOfDate" display-name-key="asOfDate_Display_Key" description-key="asOfDate_Desc_Key"
+              of-type="SingleLine.Text" usage="input" required="false" />
     <resources>
       <code path="index.ts" order="1" />
       <!-- VERIFY: pick the newest React/Fluent platform libraries your environment serves

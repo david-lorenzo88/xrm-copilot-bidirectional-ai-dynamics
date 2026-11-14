@@ -1,6 +1,7 @@
 import * as React from "react";
 import { FluentProvider, webLightTheme, type Theme } from "@fluentui/react-components";
 import { CollectionsBridgeApp } from "./components/CollectionsBridgeApp";
+import { resolveAsOf } from "@collections/domain";
 import { DEFAULT_SETTINGS, WebApiDataService, createCollectionsBridge, getCopilot, getXrm, type CollectionsBridge as Bridge, type RecordInfo, type WebApiLike } from "./bridge";
 import type { IInputs, IOutputs } from "./generated/ManifestTypes";
 
@@ -20,6 +21,7 @@ export class CollectionsBridge implements ComponentFramework.ReactControl<IInput
       sidePanes: xrm?.App?.sidePanes,
       navigation: xrm?.Navigation,
       data: new WebApiDataService(context.webAPI as unknown as WebApiLike),
+      today: () => resolveAsOf(p.asOfDate?.raw),
       settings: {
         ...DEFAULT_SETTINGS,
         gptId: p.gptId?.raw ?? undefined,

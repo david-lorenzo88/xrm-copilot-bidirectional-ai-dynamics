@@ -11,7 +11,7 @@ const ID = "0f8fad5b-d9cb-469f-a165-70867728950e";
 
 type Route = (url: URL, init: RequestInit) => { status?: number; body?: unknown } | undefined;
 
-function fakeDataverse(route: Route, options: { customerNumberPrefix?: string } = {}) {
+function fakeDataverse(route: Route, options: { customerNumberPrefix?: string; demoAsOf?: string } = {}) {
   const calls: { url: URL; init: RequestInit }[] = [];
   const fetchImpl = (async (input: string | URL, init: RequestInit = {}) => {
     const url = new URL(String(input));
@@ -24,6 +24,11 @@ function fakeDataverse(route: Route, options: { customerNumberPrefix?: string } 
 }
 
 describe("DataverseRepository", () => {
+  it("uses the configured demo date as today", () => {
+    const { repo } = fakeDataverse(() => undefined, { demoAsOf: "2026-11-27" } as never);
+    expect(repo.asOf()).toBe("2026-11-27");
+  });
+
   it("scopes BC reads to a customer number prefix and filters open invoices by status", async () => {
     const { repo, calls } = fakeDataverse(
       (url) => {
