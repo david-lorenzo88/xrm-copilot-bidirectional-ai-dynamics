@@ -350,56 +350,72 @@ Copilot Studio: executeEvent and executePrompt run topics and return MCSResponse
 
 
 APP_TO_AGENT_CODE = """
-// Publish what is on screen whenever the form or view changes
-const copilot = Xrm.Copilot;
-if (await copilot.isM365CopilotEnabled()) {
-  await copilot.updateContext({
-    entity: "dyn365bc_customer_v2_0",
-    recordId, customerName: "Fabrikam",
-    view: "Overdue invoices",
-    filterXML: overdueFetchXml,
-  });
-  await copilot.openM365CopilotPanel();
+// pcf/CollectionsBridge/bridge/context.ts (simplified)
+export async function publishContext(copilot, context, openPanel) {
+  if (!(await copilot.isM365CopilotEnabled())) return false;
+  await copilot.updateContext(toPowerAppsContent(context));
+  if (openPanel) await copilot.openM365CopilotPanel();
+  return true;
 }
 
-// One click: a grounded request to OUR agent
-await copilot.sendPromptToM365Copilot(
-  "Analyze this customer's payment behavior",
-  { gptId: COLLECTIONS_AGENT_ID });
+export async function askCopilot(copilot, prompt, context, gptId) {
+  await copilot.sendPromptToM365Copilot(
+    buildGroundedPrompt(prompt, context), // context in the prompt too
+    gptId ? { gptId } : undefined);
+}
 """
 
 AGENT_TO_APP_PCF = """
-// In the app (PCF): handle a custom action
-await Xrm.Copilot.addActionHandler(
-  "Contoso.Collections.OpenInvoices",
-  async ({ invoiceIds }) => {
-    for (const id of invoiceIds.slice(0, 3)) {
-      const pane = Xrm.App.sidePanes
-        .createPane({ canClose: true });
-      await pane.navigate({
-        pageType: "entityrecord",
-        entityName: INVOICE_TABLE,
-        entityId: id });
-    }
+// pcf/CollectionsBridge/bridge/handlers.ts (simplified)
+export function registerActionHandlers(copilot, callbacks) {
+  const registered = CUSTOM_ACTION_IDS.map((actionId) => {
+    const handler = async (actionData) => {
+      const parsed = actionGuard.parse(actionId, actionData);
+      if (!parsed.ok) return callbacks.rejected(actionId);
+      await callbacks.run(parsed); // panes, worklist, UI
+    };
+    copilot.addActionHandler(actionId, handler);
+    return [actionId, handler];
   });
+  return () => registered.forEach(([id, h]) =>
+    copilot.removeActionHandler(id, h));
+}
 """
 
 AGENT_TO_APP_WIDGET = """
-// In Copilot (MCP App widget): emit it
-window.parent.parent.postMessage({
-  eventName: "powerapps.copilot.chat.action",
-  action: "Contoso.Collections.OpenInvoices",
-  actionData: { invoiceIds },
-}, "*");
+// mcp-server/widgets/src/host.ts
+export function postAppAction(action, data) {
+  const msg = createChatActionMessage(action, data);
+  window.parent.parent.postMessage(msg, "*");
+}
+// msg = { eventName: "powerapps.copilot.chat.action",
+//         action, actionData }
+"""
+
+MCP_TOOL_CODE = """
+// mcp-server/src/tools/register.ts (simplified)
+registerAppTool(server, "prioritize_collections", {
+  title: "Prioritize collections",
+  inputSchema: { customerNo, limit, applyInApp },
+  annotations: { readOnlyHint: true },
+  _meta: { ui: { resourceUri: "ui://collections/priority-list" } },
+}, (args) => respond(() => prioritize(repo, args)));
+
+// mcp-server/src/widgets.ts (simplified)
+registerAppResource(server, w.name, w.uri, {}, async () => ({
+  contents: [{ uri: w.uri,
+    mimeType: RESOURCE_MIME_TYPE, // text/html;profile=mcp-app
+    text: await source(key) }],   // single-file React build
+}));
 """
 
 
 def s_code_app_to_agent(prs):
     s = white_title(prs, "App → agent: share, then ask")
-    code_panel(s, 0.62, 1.9, 7.9, 4.85, APP_TO_AGENT_CODE, size=13, label="PCF · CollectionsBridge")
+    code_panel(s, 0.62, 1.9, 7.9, 4.85, APP_TO_AGENT_CODE, size=12, label="PCF · CollectionsBridge")
     tips = [
         ("Guard once", "Every method is a no-op when Copilot is disabled"),
-        ("Merged for you", "appId, orgId, geo and schema version are added to your context"),
+        ("Belt and braces", "Context also rides inside the prompt, in case updateContext doesn't reach the agent"),
         ("Target an agent", "gptId sends the prompt to your declarative agent, not the default"),
     ]
     for k, (head, body) in enumerate(tips):
@@ -409,16 +425,18 @@ def s_code_app_to_agent(prs):
             {"runs": [{"t": head, "b": True, "color": RED, "font": BODY_FONT_BOLD}], "size": 15, "space_after": 4},
             {"runs": [body], "size": 13},
         ], size=13, color=INK)
-    notes(s, """Two calls do the grounding. updateContext publishes what is on screen: table, record, view and the
-FetchXML of the current filter. The platform merges in appId, orgId, geo and schema version.
-Then sendPromptToM365Copilot sends a prompt to a specific agent, by gptId. Guard everything with
-isM365CopilotEnabled: if any switch is off, the calls silently do nothing.""")
+    notes(s, """Real code from the PCF control. publishContext: guard with isM365CopilotEnabled (if any switch is off,
+the calls silently do nothing), then updateContext with what is on screen: table, record, view and the FetchXML
+of the current filter. The platform merges in appId, orgId, geo and schema version.
+askCopilot sends a prompt to our agent by gptId. buildGroundedPrompt also appends a one-line [App context]
+summary to the prompt: the maker docs say authored agents can't yet use in-app context, so the grounding
+must not depend on updateContext alone. Verify this in your tenant.""")
 
 
 def s_code_agent_to_app(prs):
     s = white_title(prs, "Agent → app: actions")
-    code_panel(s, 0.62, 1.9, 6.35, 4.85, AGENT_TO_APP_PCF, size=12.5, label="In the app")
-    code_panel(s, 7.17, 1.9, 5.56, 2.75, AGENT_TO_APP_WIDGET, size=12, label="In Copilot")
+    code_panel(s, 0.62, 1.9, 6.35, 4.85, AGENT_TO_APP_PCF, size=11, label="In the app")
+    code_panel(s, 7.17, 1.9, 5.56, 2.75, AGENT_TO_APP_WIDGET, size=11, label="In Copilot")
     box(s, 7.17, 4.85, 5.56, 1.9, fill=GREY, radius=0.08)
     text(s, 7.42, 5.0, 5.1, 1.65, [
         {"runs": [{"t": "Built-in actions", "b": True, "color": RED}], "space_after": 2},
@@ -427,11 +445,35 @@ def s_code_agent_to_app(prs):
         {"runs": [{"t": "Or from an Adaptive Card: ", "size": 12},
                   {"t": "{ type: \"PowerApps\", action, actionData }", "font": CODE_FONT, "size": 11}]},
     ], size=13)
-    notes(s, """The reverse direction. The app registers a handler per action ID. Here, OpenInvoices opens each critical
-invoice in its own side pane. The agent emits the action from the widget it rendered in Copilot, with a
+    notes(s, """The reverse direction. The app registers one handler per custom action ID, and every payload goes
+through the contract's allow-list guard before anything happens. OpenInvoices opens each critical invoice in
+its own side pane; ShowWorklist loads the prioritized list; RenderDashboard renders the shared component. The agent emits the action from the widget it rendered in Copilot, with a
 postMessage carrying eventName powerapps.copilot.chat.action. From an Adaptive Card, the same payload goes
 in Action.Submit data with type PowerApps. Two actions come built in: OpenRecord and NavigateToView.
 Treat every payload as untrusted input: allow-list action IDs and validate the data.""")
+
+
+def s_code_mcp(prs):
+    s = white_title(prs, "Tools that return UI")
+    code_panel(s, 0.62, 1.9, 7.9, 4.85, MCP_TOOL_CODE, size=11.5, label="MCP Apps server")
+    tips = [
+        ("One annotation", "Copilot honors readOnlyHint only, so writes need their own confirmation"),
+        ("Same components", "Widgets are single-file builds of the React package the PCF uses"),
+        ("No push", "No onhostcontextchanged in Copilot: widgets can't be updated live"),
+    ]
+    for k, (head, body) in enumerate(tips):
+        y = 1.9 + k * 1.65
+        box(s, 8.8, y, 3.93, 1.45, fill=GREY, radius=0.08)
+        text(s, 9.05, y + 0.18, 3.45, 1.15, [
+            {"runs": [{"t": head, "b": True, "color": RED, "font": BODY_FONT_BOLD}], "size": 15, "space_after": 4},
+            {"runs": [body], "size": 13},
+        ], size=13, color=INK)
+    notes(s, """The MCP Apps side. A tool links its result to a widget with _meta.ui.resourceUri; the widget is a ui://
+resource served as text/html;profile=mcp-app. Our widgets are single-file Vite builds of the same React
+components the PCF renders, which is what makes 'same UI on two surfaces' real.
+Copilot supports only part of the MCP Apps spec: readOnlyHint is the only annotation it honors, and there is no
+host-context-changed event, so you cannot push updates into a widget. Seven tools in total: context, analysis,
+prioritization, dashboard create/get/update and a follow-up proposal.""")
 
 
 def s_contract(prs):
@@ -441,7 +483,7 @@ def s_contract(prs):
         ("OpenInvoices", "invoiceIds[]", "priority-list widget", "Opens each critical invoice in a side pane"),
         ("ShowWorklist", "fetchXml, title", "priority-list widget", "Switches the grid to today's prioritized list"),
         ("RenderDashboard", "dashboardId | spec", "aging-dashboard widget", "Renders <AgingDashboard> in the app"),
-        ("LogFollowUp", "customerNo, note, date", "agent proposal", "Asks to confirm, then writes to Dataverse"),
+        ("LogFollowUp", "customerNo, note, date", "follow-up card widget", "Asks to confirm, then writes to Dataverse"),
     ]
     widths = [2.55, 2.55, 2.6, 4.41]
     from pptx.util import Inches, Pt
@@ -672,6 +714,7 @@ Change a filter in the app: the PCF updates the spec and the context, and the ag
     s_xrm_map(prs)
     s_code_app_to_agent(prs)
     s_code_agent_to_app(prs)
+    s_code_mcp(prs)
     s_contract(prs)
     s_shared_state(prs)
     s_erp(prs)
@@ -685,7 +728,7 @@ Change a filter in the app: the PCF updates the spec and the context, and the ag
     s_thanks(prs)
 
     drop_slides(prs, n_template)
-    set_sections(prs, [("Opening", 6), ("Live demo", 5), ("Architecture", 9), ("Production", 4), ("Closing", 3)])
+    set_sections(prs, [("Opening", 6), ("Live demo", 5), ("Architecture", 10), ("Production", 4), ("Closing", 3)])
     drop_revision_parts(prs)
     fix_duplicate_shape_ids(prs)
     prs.save(OUTPUT)
