@@ -310,6 +310,7 @@ function explain(err, context) {
 
 // ------------------------------------------------------------------ main
 let companyRoot = `${API_ROOT}/companies(<company-id>)`;
+const mostCommon = (xs) => [...xs.filter(Boolean).reduce((m, x) => m.set(x, (m.get(x) ?? 0) + 1), new Map())].sort((a, b) => b[1] - a[1])[0]?.[0];
 let demoPaymentTerms; // { id, code } applied to this script's customers (and to drafts created before it was set)
 const stats = { customersCreated: 0, customersSkipped: 0, invoicesCreated: 0, invoicesResumed: 0, invoicesPosted: 0, invoicesSkipped: 0, paymentsCreated: 0, paymentsSkipped: 0, journalPosts: 0 };
 
@@ -401,11 +402,13 @@ async function main() {
       try {
         let lines = [];
         if (inv) {
+          // A leftover draft of ours (an earlier run stopped before posting it) may predate the customer
+          // setup it copies at creation (payment terms/method). Delete it and create it again.
           stats.invoicesResumed++;
-          lines = await listAll(`salesInvoices(${inv.id})/salesInvoiceLines`);
-          // A draft created before the customer had payment terms keeps none; give it ours.
-          if (demoPaymentTerms && !DRY) await patch(`salesInvoices(${inv.id})`, { paymentTermsId: demoPaymentTerms.id }, inv["@odata.etag"]);
-        } else {
+          await http("DELETE", `salesInvoices(${inv.id})`, undefined, { "If-Match": inv["@odata.etag"] ?? "*" });
+          inv = undefined;
+        }
+        if (!inv) {
           inv = await post("salesInvoices", { customerId, invoiceDate: p.invoiceDate, postingDate: p.invoiceDate, dueDate: p.dueDate, externalDocumentNumber: p.ext });
           stats.invoicesCreated++;
         }
@@ -549,7 +552,7 @@ async function main() {
 async function ensurePostingGroups() {
   const odata = `${API_ROOT.replace(/\/api\/v2\.0$/, "/ODataV4")}/Company(${odataStr(BC_COMPANY)})`;
   const fields = ["customerPostingGroup", "genBusPostingGroup", "vatBusPostingGroup"];
-  const rows = await listAll(`${odata}/workflowCustomers?$select=id,number,paymentTermsCode,${fields.join(",")}`);
+  const rows = await listAll(`${odata}/workflowCustomers?$select=id,number,paymentTermsCode,paymentMethodCode,reminderTermsCode,${fields.join(",")}`);
   const ours = rows.filter((r) => r.number.startsWith(`${PREFIX}C-`));
   // Payment terms are required for posting too. The fixtures set each invoice's due date, so the code
   // only has to exist: use --payment-terms, else a plain net-30 term (30D, single settlement).
@@ -558,7 +561,14 @@ async function ensurePostingGroups() {
     ? terms.find((t) => t.code === opt("--payment-terms"))
     : terms.find((t) => t.dueDateCalculation === "30D" && !/X/i.test(t.code)) ?? terms[0];
   if (!demoPaymentTerms && !DRY) die(`No payment terms in ${BC_COMPANY}; create one or pass --payment-terms <code>.`);
-  const missing = ours.filter((r) => fields.some((f) => !r[f]) || !r.paymentTermsCode);
+  // Some localizations (e.g. ES) also require a payment method. Use a plain bank transfer: methods that
+  // create bills or carry a balancing account would change how the invoices are settled.
+  const methods = await listAll("paymentMethods?$select=id,code,displayName");
+  const method = opt("--payment-method") ?? (methods.find((m) => m.code === "BANCO" || m.code === "BANK")?.code ?? "");
+  const extra = { paymentTermsCode: demoPaymentTerms?.code, paymentMethodCode: method };
+  const reminder = mostCommon(rows.filter((r) => !r.number.startsWith(PREFIX)).map((r) => r.reminderTermsCode));
+  if (reminder) extra.reminderTermsCode = reminder;
+  const missing = ours.filter((r) => fields.some((f) => !r[f]) || Object.entries(extra).some(([k, v]) => v && r[k] !== v));
   if (!missing.length) {
     if (!DRY) ok(`posting groups and payment terms set on all ${ours.length} ${PREFIX}C-* customers`);
     return;
@@ -576,9 +586,9 @@ async function ensurePostingGroups() {
     groups = JSON.parse(best[0]);
   }
   for (const r of missing) {
-    await patch(`${odata}/workflowCustomers(${r.id})`, { ...Object.fromEntries(fields.map((f, i) => [f, groups[i]])), paymentTermsCode: demoPaymentTerms?.code }, r["@odata.etag"]);
+    await patch(`${odata}/workflowCustomers(${r.id})`, { ...Object.fromEntries(fields.map((f, i) => [f, groups[i]])), ...extra }, r["@odata.etag"]);
   }
-  ok(`posting groups ${groups.join(" / ")} and payment terms ${demoPaymentTerms?.code} set on ${missing.length} ${PREFIX}C-* customers`);
+  ok(`posting groups ${groups.join(" / ")}, payment terms ${extra.paymentTermsCode}, payment method ${extra.paymentMethodCode || "(none)"}, reminder terms ${extra.reminderTermsCode ?? "(none)"} set on ${missing.length} ${PREFIX}C-* customers`);
 }
 
 async function resolveLineTarget() {
