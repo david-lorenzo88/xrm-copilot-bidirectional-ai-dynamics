@@ -92,7 +92,8 @@ const VERBOSE = flag("--verbose");
 const AS_OF = opt("--as-of", "2026-11-27");
 const PREFIX = opt("--prefix", "DEMO-");
 const STEPS = new Set(opt("--steps", "customers,invoices,payments").split(",").map((s) => s.trim()));
-const BATCH = opt("--batch", "DEMOPAY").toUpperCase();
+// General journal batch (GENERAL template): the API can post `journals`, but not customerPaymentJournals.
+const BATCH = opt("--batch", "DEMOPAYGJ").toUpperCase();
 if (!/^\d{4}-\d{2}-\d{2}$/.test(AS_OF) || Number.isNaN(Date.parse(AS_OF))) die(`--as-of must be YYYY-MM-DD (got ${AS_OF})`);
 if (!/^[A-Z0-9][A-Z0-9-]{0,7}$/.test(PREFIX)) die("--prefix must be 1-8 characters, A-Z 0-9 and '-' (it becomes part of BC Code fields)");
 if (!/^[A-Z0-9]{1,10}$/.test(BATCH)) die("--batch must be 1-10 characters A-Z 0-9");
@@ -494,26 +495,37 @@ async function main() {
   }
 
   const journal = await ensureJournal();
-  const existingLines = await listAll(`customerPaymentJournals(${journal.id})/customerPayments?$select=id,documentNumber`);
+  const existingLines = await listAll(`journals(${journal.id})/journalLines?$select=id,documentNumber`);
   const queued = new Set(existingLines.map((l) => l.documentNumber));
   const pending = todo.filter(({ p }) => !queued.has(p.paymentDocNo));
 
-  const addLine = ({ p, inv }) =>
-    post(`customerPaymentJournals(${journal.id})/customerPayments`, {
-      customerId: customerIds.get(p.customerNumber),
+  // A general journal line can't carry document type / applies-to through API v2.0, so those are set
+  // through the standard workflowGenJournalLines OData page (same record, keyed by its id).
+  const odata = `${API_ROOT.replace(/\/api\/v2\.0$/, "/ODataV4")}/Company(${odataStr(BC_COMPANY)})`;
+  const addLine = async ({ p, inv }) => {
+    const amount = round2(PAYMENT_SIGN * Number(inv.remainingAmount || inv.totalAmountIncludingTax));
+    // journalLines (API v2.0) only takes G/L accounts, so create the line bare and set the customer,
+    // document type, application and balancing bank account on the same record through the OData page.
+    const line = await post(`journals(${journal.id})/journalLines`, {
       postingDate: p.paidOn,
       documentNumber: p.paymentDocNo,
-      amount: round2(PAYMENT_SIGN * Number(inv.remainingAmount || inv.totalAmountIncludingTax)),
-      appliesToInvoiceId: inv.id,
       description: `Payment ${inv.number}`.slice(0, 100),
-    }).then(() => stats.paymentsCreated++);
+    });
+    const wl = `${odata}/workflowGenJournalLines(${line.id})`;
+    await patch(wl, { accountType: "Customer", accountNumber: p.customerNumber, documentType: "Payment" });
+    await patch(wl, {
+      appliesToDocType: "Invoice", appliesToDocNumber: inv.number, amount,
+      balAccountType: "G/L Account", balAccountNumber: journal.balancingAccountNumber,
+    });
+    stats.paymentsCreated++;
+  };
   const postJournal = async () => {
     try {
-      await post(`customerPaymentJournals(${journal.id})/Microsoft.NAV.post`);
+      await post(`journals(${journal.id})/Microsoft.NAV.post`);
       stats.journalPosts++;
     } catch (err) {
       if (err instanceof BcError && (err.status === 404 || /action|not found|Microsoft\.NAV\.post/i.test(err.bcMessage)) && !/posting date|posting group/i.test(err.bcMessage))
-        die(`This BC version does not expose posting for customerPaymentJournals via the API (${err.message}).\n  The lines are in journal batch ${BATCH}: open Cash Receipt Journals in BC, choose batch ${BATCH}, Post. Then re-run this script to verify.`);
+        die(`Posting journal batch ${BATCH} through the API failed (${err.message}).\n  The lines are in General Journal batch ${BATCH}: open General Journals in BC, choose batch ${BATCH}, Post. Then re-run this script to verify.`);
       if (err instanceof BcError) die(explain(err, `Posting journal batch ${BATCH}`));
       throw err;
     }
@@ -633,12 +645,12 @@ async function resolveLineTarget() {
 }
 
 async function ensureJournal() {
-  const [existing] = await listAll(`customerPaymentJournals?$filter=code eq ${odataStr(BATCH)}`);
+  const [existing] = await listAll(`journals?$filter=code eq ${odataStr(BATCH)}`);
   if (existing) {
     if (!String(existing.displayName ?? "").includes(OWNER_MARKER))
       die(`Payment journal batch ${BATCH} exists and was not created by this script (description '${existing.displayName}'). Pass --batch <another code>.`);
     if (!existing.balancingAccountId || existing.balancingAccountId === "00000000-0000-0000-0000-000000000000")
-      die(`Journal batch ${BATCH} has no balancing account. Set one in BC (Cash Receipt Journal batch ${BATCH}) and re-run.`);
+      die(`Journal batch ${BATCH} has no balancing account. Set one in BC (General Journal batch ${BATCH}) and re-run.`);
     ok(`batch ${BATCH} exists (ours)`);
     return existing;
   }
@@ -653,7 +665,7 @@ async function ensureJournal() {
       die(`Could not pick a bank/cash G/L account to balance the payments. Pass --bal-account <no>. Candidates: ${candidates.slice(0, 15).map((a) => `${a.number} ${a.displayName}`).join("; ") || "(none)"}`);
   }
   if (bal) ok(`balancing account ${bal.number} ${bal.displayName}`);
-  return post("customerPaymentJournals", { code: BATCH, displayName: `Demo payments (${OWNER_MARKER})`, balancingAccountId: bal?.id ?? "<bank G/L account id>" });
+  return post("journals", { code: BATCH, displayName: `Demo payments (${OWNER_MARKER})`, balancingAccountId: bal?.id ?? "<bank G/L account id>" });
 }
 
 function finish() {
