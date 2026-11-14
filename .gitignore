@@ -38,3 +38,6 @@ Thumbs.db
 
 # tenant-specific deployment settings
 deploy/tenant.env
+
+# app-builder build state (environment-specific)
+dataverse/app-builder/.maker-workspace/

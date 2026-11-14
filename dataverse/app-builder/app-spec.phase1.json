@@ -1,0 +1,266 @@
+{
+  "solution": {
+    "uniqueName": "CollectionsWorkspace",
+    "displayName": "Collections Workspace",
+    "publisherPrefix": "ppn"
+  },
+  "app": {
+    "name": "Collections Workspace",
+    "description": "Chase overdue invoices on live Business Central data, side by side with the Collections agent in Microsoft 365 Copilot.",
+    "aiDescription": "For finance collections specialists. Covers Business Central customers and posted sales invoices (read live through virtual tables), overdue worklists, aging dashboards shared with the Collections agent, and confirmed follow-ups. Excludes sales, purchasing and anything that writes to Business Central."
+  },
+  "entities": [
+    {
+      "schemaName": "ppn_collectiondashboard",
+      "displayName": "Collection dashboard",
+      "pluralName": "Collection dashboards",
+      "description": "Shared state between the Collections agent, its Copilot widget and the app: one aging-dashboard spec (JSON) per row; last write wins on Version.",
+      "iconDescription": "a bar chart with three ascending bars and a small clock in the corner",
+      "primaryAttribute": {
+        "schemaName": "ppn_name",
+        "displayName": "Name",
+        "maxLength": 200
+      },
+      "columns": [
+        {
+          "schemaName": "ppn_specjson",
+          "displayName": "Spec (JSON)",
+          "type": "Memo",
+          "maxLength": 100000,
+          "description": "DashboardSpec v1 as JSON (packages/contract/src/dashboard.ts); written by the agent's tool and by the PCF."
+        },
+        {
+          "schemaName": "ppn_version",
+          "displayName": "Version",
+          "type": "Integer",
+          "minValue": 1,
+          "maxValue": 2147483647,
+          "description": "Monotonic revision of the spec; the higher version wins when the agent and the app both edit."
+        },
+        {
+          "schemaName": "ppn_customerno",
+          "displayName": "Customer number",
+          "type": "Text",
+          "maxLength": 20,
+          "description": "Business Central customer number when the dashboard is scoped to one customer; empty for portfolio dashboards."
+        }
+      ]
+    },
+    {
+      "schemaName": "ppn_collectionaction",
+      "displayName": "Collection action",
+      "pluralName": "Collection actions",
+      "description": "Audit trail of every agent action the app handled, rejected or failed, plus follow-ups (promises to pay) the specialist confirmed. Never written to Business Central.",
+      "iconDescription": "a clipboard with a check mark and a small speech bubble",
+      "primaryAttribute": {
+        "schemaName": "ppn_name",
+        "displayName": "Name",
+        "maxLength": 200
+      },
+      "columns": [
+        {
+          "schemaName": "ppn_actionid",
+          "displayName": "Action id",
+          "type": "Text",
+          "maxLength": 100,
+          "description": "Bridge action that triggered the row, e.g. Contoso.Collections.LogFollowUp."
+        },
+        {
+          "schemaName": "ppn_customerno",
+          "displayName": "Customer number",
+          "type": "Text",
+          "maxLength": 20,
+          "description": "Business Central customer number the action was about."
+        },
+        {
+          "schemaName": "ppn_payloadjson",
+          "displayName": "Payload (JSON)",
+          "type": "Memo",
+          "maxLength": 100000,
+          "description": "Validated action payload as received from the agent, kept for audit."
+        },
+        {
+          "schemaName": "ppn_note",
+          "displayName": "Note",
+          "type": "Memo",
+          "maxLength": 4000,
+          "description": "Specialist's note for a follow-up, e.g. what the customer promised on the call."
+        },
+        {
+          "schemaName": "ppn_promisedate",
+          "displayName": "Promise-to-pay date",
+          "type": "DateTime",
+          "description": "Date the customer promised to pay; drives the next follow-up."
+        },
+        {
+          "schemaName": "ppn_promisedamount",
+          "displayName": "Promised amount",
+          "type": "Decimal",
+          "precision": 2,
+          "minValue": 0,
+          "maxValue": 100000000000,
+          "description": "Amount the customer promised to pay, in the invoice currency."
+        },
+        {
+          "schemaName": "ppn_outcome",
+          "displayName": "Outcome",
+          "type": "Text",
+          "maxLength": 20,
+          "description": "handled | rejected | cancelled | failed | confirmed: how the app dealt with the action."
+        },
+        {
+          "schemaName": "ppn_source",
+          "displayName": "Source",
+          "type": "Text",
+          "maxLength": 20,
+          "description": "agent | user: who initiated the action."
+        }
+      ]
+    }
+  ],
+  "relationships": [],
+  "views": [
+    {
+      "entity": "ppn_collectiondashboard",
+      "name": "Recent dashboards",
+      "description": "Dashboards built by the agent or edited in the app, newest first.",
+      "columns": [
+        "ppn_name",
+        "ppn_customerno",
+        "ppn_version",
+        "modifiedon"
+      ],
+      "sort": [
+        {
+          "attr": "modifiedon",
+          "dir": "desc"
+        }
+      ]
+    },
+    {
+      "entity": "ppn_collectionaction",
+      "name": "Confirmed follow-ups",
+      "description": "Promises to pay the specialist confirmed, by promise date: tomorrow's call list.",
+      "columns": [
+        "ppn_name",
+        "ppn_customerno",
+        "ppn_promisedate",
+        "ppn_promisedamount",
+        "ppn_note"
+      ],
+      "sort": [
+        {
+          "attr": "ppn_promisedate",
+          "dir": "asc"
+        }
+      ],
+      "filters": [
+        {
+          "attr": "ppn_outcome",
+          "op": "eq",
+          "value": "confirmed"
+        }
+      ]
+    },
+    {
+      "entity": "ppn_collectionaction",
+      "name": "Agent action log",
+      "description": "Every agent action the app received, newest first, including rejected ones: the audit trail for governance.",
+      "columns": [
+        "ppn_name",
+        "ppn_actionid",
+        "ppn_outcome",
+        "ppn_source",
+        "ppn_customerno",
+        "createdon"
+      ],
+      "sort": [
+        {
+          "attr": "createdon",
+          "dir": "desc"
+        }
+      ]
+    }
+  ],
+  "forms": [
+    {
+      "entity": "ppn_collectiondashboard",
+      "type": "main",
+      "name": "Collection dashboard",
+      "layout": "auto",
+      "description": "Inspect a shared dashboard spec (normally edited through the agent or the PCF)."
+    },
+    {
+      "entity": "ppn_collectionaction",
+      "type": "main",
+      "name": "Collection action",
+      "layout": "auto",
+      "description": "Review one audited agent action or confirmed follow-up."
+    }
+  ],
+  "appShell": {
+    "areas": [
+      {
+        "label": "Collections",
+        "groups": [
+          {
+            "label": "Agent",
+            "subAreas": [
+              {
+                "entity": "ppn_collectiondashboard",
+                "title": "Dashboards"
+              },
+              {
+                "entity": "ppn_collectionaction",
+                "title": "Follow-ups & audit"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "personas": [
+    {
+      "persona": "Collections Specialist",
+      "jobs": [
+        {
+          "name": "Build and share aging dashboards with the agent",
+          "surfaces": [
+            "Recent dashboards",
+            "Collection dashboard"
+          ],
+          "privileges": [
+            {
+              "entity": "ppn_collectiondashboard",
+              "access": [
+                "create",
+                "read",
+                "write"
+              ],
+              "scope": "user"
+            }
+          ]
+        },
+        {
+          "name": "Confirm follow-ups the agent proposes",
+          "surfaces": [
+            "Confirmed follow-ups",
+            "Agent action log",
+            "Collection action"
+          ],
+          "privileges": [
+            {
+              "entity": "ppn_collectionaction",
+              "access": [
+                "create",
+                "read"
+              ],
+              "scope": "user"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
