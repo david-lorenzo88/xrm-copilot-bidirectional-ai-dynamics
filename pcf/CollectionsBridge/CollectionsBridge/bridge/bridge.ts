@@ -21,6 +21,8 @@ export interface BridgeSettings {
   autoOpenPanel: boolean;
   viewName: string;
   analyzePrompt: string;
+  /** Sent by "Build aging dashboard" (beat 3 without typing; works even if the pane left the agent). */
+  buildDashboardPrompt: string;
   /** Sent by "Ask Copilot" after an in-app dashboard change; {version} becomes "v4". */
   dashboardPrompt: string;
   /** Optional saved view to switch the grid to on ShowWorklist. */
@@ -31,6 +33,7 @@ export const DEFAULT_SETTINGS: BridgeSettings = {
   autoOpenPanel: true,
   viewName: "Overdue invoices",
   analyzePrompt: "Use the Collections tools to analyze the payment behavior of {customer} and prioritize what to chase today.",
+  buildDashboardPrompt: "Use the Collections tools to build me a dashboard of overdue by customer and aging bucket.",
   dashboardPrompt: "Use the Collections tools to read the latest aging dashboard ({version}, changed in the app) and tell me what it shows now.",
 };
 
@@ -67,6 +70,8 @@ export interface CollectionsBridge {
   settings: BridgeSettings;
   setRecord(record: RecordInfo): Promise<void>;
   analyze(): Promise<void>;
+  /** App → agent: build the aging dashboard (the agent asks to confirm, then it renders in both places). */
+  buildDashboard(): Promise<void>;
   changeDashboardFilters(filters: DashboardFilters): Promise<void>;
   /** App → agent after an in-app change: authored agents don't get updateContext, so the prompt says so. */
   askAboutDashboard(): Promise<void>;
@@ -179,6 +184,11 @@ export function createCollectionsBridge(deps: BridgeDeps): CollectionsBridge {
       if (!copilot) return notify({ intent: "warning", text: "Microsoft 365 Copilot is not available in this app" });
       if (store.get().copilot === "disabled") return notify({ intent: "warning", text: "Microsoft 365 Copilot is turned off for this app or user" });
       await askCopilot(copilot, settings.analyzePrompt, store.get().context, settings.gptId);
+    },
+    async buildDashboard() {
+      if (!copilot) return notify({ intent: "warning", text: "Microsoft 365 Copilot is not available in this app" });
+      if (store.get().copilot === "disabled") return notify({ intent: "warning", text: "Microsoft 365 Copilot is turned off for this app or user" });
+      await copilot.sendPromptToM365Copilot(settings.buildDashboardPrompt, settings.gptId ? { gptId: settings.gptId } : undefined);
     },
     async changeDashboardFilters(filters) {
       const current = store.get().dashboard;

@@ -336,7 +336,27 @@
           "label": "Overdue invoices",
           "tab": "tab_collections"
         }
-      ]
+      ],
+      "fieldOptions": {
+        "dyn365bc_displayname": {
+          "readOnly": true
+        },
+        "dyn365bc_city": {
+          "readOnly": true
+        },
+        "dyn365bc_balancedue": {
+          "readOnly": true
+        },
+        "dyn365bc_creditlimit": {
+          "readOnly": true
+        },
+        "dyn365bc_currencycode": {
+          "readOnly": true
+        },
+        "dyn365bc_salespersoncode": {
+          "readOnly": true
+        }
+      }
     },
     {
       "entity": "dyn365bc_salesinvoice_v2_0",
@@ -373,7 +393,36 @@
             }
           ]
         }
-      ]
+      ],
+      "fieldOptions": {
+        "dyn365bc_number": {
+          "readOnly": true
+        },
+        "dyn365bc_status": {
+          "readOnly": true
+        },
+        "dyn365bc_remainingamount": {
+          "readOnly": true
+        },
+        "dyn365bc_totalamountincludingtax": {
+          "readOnly": true
+        },
+        "dyn365bc_currencycode": {
+          "readOnly": true
+        },
+        "dyn365bc_customername": {
+          "readOnly": true
+        },
+        "dyn365bc_customernumber": {
+          "readOnly": true
+        },
+        "dyn365bc_invoicedate": {
+          "readOnly": true
+        },
+        "dyn365bc_duedate": {
+          "readOnly": true
+        }
+      }
     },
     {
       "entity": "ppn_collectiondashboard",

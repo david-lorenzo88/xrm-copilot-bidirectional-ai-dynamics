@@ -48,6 +48,9 @@ export function CollectionsBridgeApp({ bridge }: { bridge: CollectionsBridge }) 
         <Button appearance="primary" disabled={!canAsk} onClick={() => void bridge.analyze()}>
           Analyze payment behavior
         </Button>
+        <Button appearance="secondary" disabled={!canAsk} onClick={() => void bridge.buildDashboard()}>
+          Build aging dashboard
+        </Button>
       </div>
 
       {s.notice && <Text className={mergeClasses(styles.notice, styles[s.notice.intent])}>{s.notice.text}</Text>}

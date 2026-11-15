@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="Contoso" constructor="CollectionsBridge" version="1.0.8"
+  <control namespace="Contoso" constructor="CollectionsBridge" version="1.0.9"
            display-name-key="CollectionsBridge_Display_Key" description-key="CollectionsBridge_Desc_Key"
            control-type="virtual">
     <external-service-usage enabled="false"></external-service-usage>

@@ -26,6 +26,9 @@ const useStyles = makeStyles({
   totalRow: { fontWeight: tokens.fontWeightSemibold },
   muted: { color: tokens.colorNeutralForeground3 },
   tableWrap: { overflowX: "auto" },
+  // Fluent's Table is table-layout: fixed (equal columns), which clipped "€73,588.52" in the narrow
+  // in-app control. Auto layout sizes the number columns to fit; names wrap; the wrapper scrolls if needed.
+  table: { tableLayout: "auto", width: "100%" },
 });
 
 export interface AgingDashboardProps {
@@ -98,7 +101,7 @@ export function AgingDashboard({ spec, data, onFiltersChange, actions, dark, max
           {showChart && <StackedBarChart data={data} dark={dark} maxRows={maxRows} />}
           {showTable && (
             <div className={styles.tableWrap}>
-              <Table size="small" aria-label={`${spec.title} (table)`}>
+              <Table className={styles.table} size="small" aria-label={`${spec.title} (table)`}>
                 <TableHeader>
                   <TableRow>
                     <TableHeaderCell>{dimensionLabel(spec.groupBy[0])}</TableHeaderCell>

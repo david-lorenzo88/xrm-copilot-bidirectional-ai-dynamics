@@ -82,6 +82,16 @@ describe("beat 2: the agent operates the app", () => {
     expect(options).toEqual({ gptId: "T_collections.agent" });
   });
 
+  it("Build aging dashboard sends the beat-3 prompt to our agent", async () => {
+    const { bridge, copilot } = setup();
+    await bridge.setRecord({ customerNo: "C-1001" });
+    await bridge.buildDashboard();
+    expect(vi.mocked(copilot.sendPromptToM365Copilot).mock.calls.at(-1)).toEqual([
+      "Use the Collections tools to build me a dashboard of overdue by customer and aging bucket.",
+      { gptId: "T_collections.agent" },
+    ]);
+  });
+
   it("OpenInvoices opens one side pane per invoice", async () => {
     const { copilot, panes, data } = setup();
     const critical = fabrikamItems.filter((i) => i.critical);
