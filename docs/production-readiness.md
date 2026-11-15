@@ -85,7 +85,15 @@ the week before you ship, and date-stamp it.
 ## Gotchas (from the docs and from building this)
 
 - [ ] ⚠️ **Preview APIs**: `executeEvent` / `executePrompt` (Copilot Studio) are preview and not used here. `updateContext` is listed as GA in the reference index but "preview" on the maker page. The app designer's Agents panel is preview.
-- [ ] ⚠️ **Risk #1**: declarative agents may not get in-app context. Mitigated: the context also travels in the prompt (`[App context] …`), and the agent can call `get_customer_context`. Not yet confirmed in the tenant.
+- [ ] 🧪 **Risk #1, confirmed**: an authored declarative agent does **not** receive the `updateContext` payload (Microsoft: "Agents you author can't yet use in-app user context"). Asked "who am I looking at?", it answered from Work IQ. Mitigation in the code: the app's buttons send prompts that name the customer (`Fabrikam, Inc. (DEMO-C-1001)`) and the dashboard version; `get_dashboard` without an id returns the latest dashboard.
+- [ ] 🧪 **Tool routing in the app pane**: inside the model-driven app the pane grounds on Work IQ, and a vague prompt was answered from Dataverse search (other customers' invoices, no payment history) without calling the MCP server. No manifest field forces action calls. What made it reliable (3/3, then every run): prompts that name the tools ("Use the Collections tools to …"), `behavior_overrides.special_instructions.discourage_model_knowledge`, a plugin `description_for_model` that rules out search results, and step-by-step instructions that name each action. Typed questions about the dashboard also worked once `get_dashboard` needed no id.
+- [ ] 🧪 **New chat drops the default agent**: the pane's **+** starts plain Copilot; the default agent applies when the pane opens. Prompts sent with `sendPromptToM365Copilot(…, { gptId })` still reach the agent.
+- [ ] 🧪 **Confirmation for writing tools**: Copilot shows a *Confirm* card for any tool without `readOnlyHint` (here `build_aging_dashboard`, `update_dashboard`). Keep it: the tools do write (to Dataverse). The first call of the action also shows *Allow*.
+- [ ] 🧪 **Same scope on both surfaces**: the control computes the in-app dashboard itself, so it needs the server's customer scope too (`customerNumberPrefix` property, bound from `CUSTOMER_NUMBER_PREFIX`). Without it the app showed €785k with CRONUS customers while the widget showed €125k.
+- [ ] 🧪 **Side panes on click**: opening invoice panes automatically when the widget renders felt intrusive; the widget only sends the worklist on render, panes open from its button.
+- [ ] 🧪 **Forms over virtual tables are writable**: a generated BC form has *Save*. The App Spec marks the BC fields `readOnly` on the app's forms (except the customer number the control is bound to; the control never writes it).
+- [ ] 🧪 **Widget and control caching**: after a redeploy, an open tab keeps the old control and Copilot can serve the old widget; test in a fresh InPrivate window and a new chat.
+- [ ] ⚠️ Copilot first calls `server/discover` (newer MCP method); the SDK answers 400 and Copilot falls back to `initialize`. Harmless; noted so the log doesn't alarm anyone.
 - [ ] ⚠️ **MCP Apps host limits in Copilot**: no `ontoolinputpartial`, `ontoolcancelled`, `onhostcontextchanged`, `onteardown` or `sendLog`; only `readOnlyHint` is honoured. Sync is pull/event driven, with last-write-wins on `spec.version`.
 - [ ] ⚠️ **Static vs dynamic tool discovery**: with a static `mcp-tools.json`, at least one tool must return a widget (four do).
 - [ ] ⚠️ **`window.Xrm` from a PCF** is pragmatic but unsupported. The supported route is a form `OnLoad` script (see `docs/architecture.md`).
@@ -95,21 +103,23 @@ the week before you ship, and date-stamp it.
 
 ## Open VERIFY points
 
-Resolved in the tenant: BC virtual table and entity set names, the customer lookup name, the custom
-ledger API table name, the default-agent id format (`T_<id>.declarativeAgent`, read from the environment
-variable), the Entra SSO registration shape.
+Resolved in the tenant (15 Nov 2026 end-to-end run):
+- BC virtual table and entity set names, the customer lookup, the custom ledger API table name.
+- The default-agent id format (`T_<id>.declarativeAgent`, read from the environment variable); `sendPromptToM365Copilot`
+  accepts it as `gptId` and submits the prompt.
+- `updateContext` does **not** reach an authored declarative agent (risk #1, see Gotchas).
+- `window.parent.parent` is the right target in the Copilot-in-app host: widget actions (`ShowWorklist`, `OpenInvoices`,
+  `RenderDashboard`) reach the PCF handlers, and the audit table records each one.
+- The Entra SSO registration shape (silent SSO, only the action's *Allow* consent).
 
-Still open (code comments `// VERIFY:`), all needing the end-to-end run in the app:
+Still open (code comments `// VERIFY:`):
 
 | Where | What to check |
 |---|---|
-| `pcf/…/bridge/context.ts`, `packages/contract/src/context.ts` | `updateContext` reaches the declarative agent at all (risk #1), and which keys beyond `entity`/`filterXML` arrive |
-| `pcf/…/bridge/xrm.ts` | `sendPromptToM365Copilot` accepts the `T_….declarativeAgent` id as `gptId` and auto-submits; `removeActionHandler` signature |
-| `mcp-server/widgets/src/host.ts` | `window.parent.parent` is the right target in the Copilot-in-app host, so widget actions reach the app |
-| `pcf/…/bridge/handlers.ts` | Handler receives `actionData` vs the full envelope (both handled) |
-| `pcf/…/bridge/actions.ts` | `navigateTo(entitylist)` + saved view for ShowWorklist vs built-in `NavigateToView` |
+| `pcf/…/bridge/xrm.ts` | `removeActionHandler` signature (navigate away and back; handlers must not double-fire) |
+| `pcf/…/bridge/actions.ts` | `navigateTo(entitylist)` + saved view for ShowWorklist vs built-in `NavigateToView` (not configured in the demo) |
 | `pcf/…/index.ts` | `context.mode.contextInfo.entityId` (widely used, untyped) |
 | `pcf/…/ControlManifest.Input.xml` | Platform library versions served by the environment |
-| `packages/collections-domain/src/dataverse-mapping.ts` | Invoice status surfaces as text or choice (the code handles both) |
 | `agent/m365agents.yml` | Toolkit schema versions (the deploy path uses `deploy/agent.mjs` instead) |
 | `dataverse/tables/ppn_collectiondashboard.json` | Native → virtual table lookup support for `ppn_customer`; the code keys on `ppn_customerno`, so the demo doesn't depend on it |
+| Bonus beat | `propose_follow_up` → *Log in app* → confirm dialog has not been run in the tenant yet |

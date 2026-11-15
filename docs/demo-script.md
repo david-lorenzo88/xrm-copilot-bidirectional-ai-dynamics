@@ -10,8 +10,9 @@ day) the live tenant shows:
 |---|---|
 | Open balance | **€73,588.52** across 4 open invoices |
 | Worst invoice | **103304, €48,499.99, 100 days overdue (90+)**, ranked #1, *Call today* |
-| Payment behaviour | **39.7 days late** on average, **worsening** (+3.8 days/month; recent 44 vs prior 37.5), risk **82**/100 |
+| Payment behaviour | **39.7 days late** on average (55.4 amount-weighted), **worsening** +3.8 days/month, 0 % on time, risk **85**/100, credit use 123 % |
 | Whole demo book (25 `DEMO-C-*` customers) | 300 invoices posted, 269 paid and closed, 31 open (€221,327.21) |
+| Aging dashboard (overdue on 27 Nov) | **€124,753.11** over six customers, Fabrikam first (€73,588.52); without 90+ **€76,253.12** |
 
 Other open Fabrikam invoices: 103306 (€8,604.52), 103307 (€9,628.45) and 103308 (posted 22 Nov).
 The beats don't depend on exact numbers, but these are what you should see on stage.
@@ -20,19 +21,24 @@ The *Overdue invoices* view and its sub-grid use the **real** date (a view filte
 Only the agent's numbers and the PCF use `DEMO_AS_OF`. Before 27 Nov the sub-grid shows fewer overdue rows
 than the agent reports; on the day they match.
 
-Screenshots in `docs/img/` come from the mock host (fixture numbers such as SI-104008), not the tenant.
+Every beat below was run end to end in the tenant on 15 Nov 2026. Screenshots in `docs/img/` still come from the mock
+host (fixture numbers such as SI-104008).
 
 ## Before you go on stage
 
 - [ ] Signed in as the demo user (M365 Copilot licence). Collections Workspace open on the sitemap, Copilot pane closed.
+- [ ] Tenant switches still on (setup.md §7), above all Microsoft 365 admin center → Copilot → Settings →
+      *Business Applications data in Work IQ available to Copilot* = All users. If the header has no **Copilot** button,
+      run `await Xrm.Copilot.isM365CopilotEnabled()` in the console: `false` means a switch is off.
 - [ ] Open Fabrikam once in the last 30 minutes, so the `isM365CopilotEnabled()` cache is warm, and close it again.
 - [ ] MCP server healthy (it runs with min replicas 1, so no cold start):
   ```bash
   curl -s "$(grep ^PUBLIC_BASE_URL deploy/outputs.env | cut -d= -f2)/healthz"
   ```
   Expect `"status":"ok"`, `"dataMode":"dataverse"`, `"authMode":"entra"`.
-- [ ] One throwaway prompt to the agent from the app (any customer), so SSO consent and the token are cached.
-- [ ] No old Fabrikam dashboard: delete Fabrikam rows in *Collection dashboards*, or accept that Beat 3 starts at a higher version.
+- [ ] One rehearsal run of all three beats on the day, so SSO, the action consent (*Allow*) and the dashboard
+      *Confirm* (pick **Always allow** if offered) are already granted.
+- [ ] Old dashboards deleted in *Collection dashboards* (the agent's "the dashboard" means the latest one), so Beat 3 starts at v1.
 - [ ] Side panes from the rehearsal closed.
 - [ ] The pane is open on **Collections**. Don't use **+** (new chat) on stage: a new chat starts on plain Copilot, without
       the default agent. For a clean chat, close the pane (**X**) and reopen it with **Copilot** in the header.
@@ -46,15 +52,14 @@ Screenshots in `docs/img/` come from the mock host (fixture numbers such as SI-1
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
-| Sitemap **Customers** → view *Customers with balance* → **Fabrikam, Inc.** | Form *Collections customer* loads. At the top, the CollectionsBridge control: badge **Copilot has context**. The Copilot pane opens by itself on **Collections** | PCF `updateView` → `isM365CopilotEnabled()` → `updateContext({ entity, customerNo: "DEMO-C-1001", view: "Overdue invoices", filterXML, overdueTotal… })` → `openM365CopilotPanel()` (`autoOpenPanel` = true) |
-| Type in Copilot: **"Who am I looking at, and how bad is it?"** | The agent answers about Fabrikam without being told the name | Context from the app. The agent calls `get_customer_context` for the numbers |
+| Sitemap **Customers** → view *Customers with balance* → **Fabrikam, Inc.** | Form *Collections customer* loads. At the top, the CollectionsBridge control: badge **Copilot has context**, *Overdue €73,588.52*. The Copilot pane opens by itself on **Collections** | PCF `updateView` → `isM365CopilotEnabled()` → `updateContext({ entity, customerNo: "DEMO-C-1001", view, filterXML, overdueTotal… })` → `openM365CopilotPanel()` (`autoOpenPanel` = true); the default agent comes from the app's Agents setting |
 
-**Point at:** the sub-grid *Overdue invoices* below is the same view whose `filterXML` went into the context.
+**Say (sharp edge, confirmed live):** "The app publishes its context the moment the form loads. But agents we author
+don't receive it yet; Microsoft documents that. So the app hands the context over in the prompt instead, and that
+is the next beat." Don't type "Who am I looking at?" on stage: the agent can't know, and answers from Work IQ.
 
-**If it fails:** if the pane doesn't open, click the Copilot button in the app header. If it opens on
-the generic Copilot, pick **Collections** in the agent list. If the agent asks "which customer?",
-`updateContext` didn't reach it (risk #1). Say so ("this is exactly the sharp edge on the next slide")
-and go to Beat 2: the button embeds the context in the prompt.
+**If it fails:** if the pane doesn't open, click **Copilot** in the header. If it opens on plain Copilot, close it
+and reopen it, or type `@Collections`.
 
 ## Beat 2: The agent operates the app (4 min)
 
@@ -80,18 +85,25 @@ switch to the mock tab and repeat the beat there ("same code, with the platform 
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
-| Type: **"Build me a dashboard of overdue by customer and aging bucket"** (or the *Aging dashboard* starter) | Dashboard (stacked bars + matrix) over the `DEMO-C-*` book renders **in the pane** and, a moment later, **inside the app** | `build_aging_dashboard` stores a `DashboardSpec` in `ppn_collectiondashboard` → widget → `RenderDashboard` → PCF renders the same `<AgingDashboard>` |
-| In the **app**, click the **Current** chip to drop it | The app dashboard re-renders; the header shows **v2 (app)** | Spec v2 saved; `updateContext({ dashboardId, dashboardVersion: 2, dashboardFilters })` |
-| Type: **"What does the dashboard show now?"** | Agent: "You changed it in the app: v2, buckets 1–30, 31–60, 61–90, 90+…" | Agent calls `get_dashboard` with the id from the context (or from the prompt) |
-| Optional: in the **widget**, toggle **1–30** | The widget updates, the app follows (v3) | `app.callServerTool('update_dashboard')` → re-post `RenderDashboard` → `app.updateModelContext(...)` |
+| Control → **Build aging dashboard** (or type *"Build me a dashboard of overdue by customer and aging bucket"*) | Copilot shows a **Confirm** card for the tool. Click **Confirm** | `build_aging_dashboard` writes the spec to Dataverse, so it isn't `readOnlyHint` and Copilot asks first. Say: "the platform asks before any tool that writes, and the ERP is never written" |
+| (no click) | Dashboard (stacked bars + matrix) renders **in the pane** and, a moment later, **inside the app**: both **€124,753.11**, six customers, Fabrikam first | Spec v1 in `ppn_collectiondashboard` → widget → `RenderDashboard` → the control renders the same `<AgingDashboard>`, scoped to `DEMO-C-*` like the server |
+| In the **app**, click the **90+** chip | App dashboard re-renders: Fabrikam drops to €25,088.53, total **€76,253.12**, header **v2 (app)**, and an **Ask Copilot** button appears. The widget still shows v1 | Spec v2 saved by the app (last write wins on the version) |
+| App → **Ask Copilot** (or type *"What does the dashboard show now?"*) | The agent reports the app's change, and the widget **re-renders at v2 (app)**: both surfaces match again | `get_dashboard()` without an id returns the latest dashboard; its widget replaces the stale one |
+| Optional: in the **widget**, toggle **61–90** | Widget and app both move to v3 | `update_dashboard` → `RenderDashboard` to the app |
 
-**Say (sharp edge):** "The widget can't be pushed to. Copilot has no host-context-changed event, so sync
-is pull or event driven, with last-write-wins on a version number."
+**Say (sharp edge):** "The widget can't be pushed to. Copilot has no host-context-changed event, and the app's context
+doesn't reach our agent, so sync is pull: the agent re-reads the stored version, with last-write-wins on a version number."
 
-**If it fails:** if the dashboard doesn't appear in the app, click **Show in app** in the widget. If the
-agent doesn't see the app change, say "Read dashboard \<id\>" (the id is in the context JSON), or use the mock.
+Don't use the **Current** chip: the dashboard measures overdue amounts, so that column is always empty and removing
+it changes nothing visible.
+
+**If it fails:** if the dashboard doesn't appear in the app, click **Show in app** in the widget. If the agent
+answers about the old version, click **Ask Copilot** in the app (the prompt names the tools).
 
 ## Bonus (if time): propose, then confirm (1 min)
+
+Not yet run in the tenant: rehearse it before using it on stage.
+
 
 Type: **"Log a follow-up: Fabrikam promised to pay 103304 by 2026-12-04"** → the agent calls
 `propose_follow_up` (writes nothing) → card in the pane → **Log in app** → the app shows the confirm

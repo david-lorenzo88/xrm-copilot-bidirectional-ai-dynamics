@@ -175,10 +175,27 @@ flowchart LR
     setting and default-agent variable, BC virtual table limits, SSO and secret-less OBO, PCF update and re-bind
     steps, app-builder caveats, BC seeding gaps and the VERIFY points still open.
 
+### 14. End-to-end run in the tenant (14–15 Nov)
+33. Copilot didn't appear in the app: `isM365CopilotEnabled()` returned `false` with the app, environment and licence
+    settings on. The missing switch was tenant level: Microsoft 365 admin center → Copilot → Settings → *Business
+    Applications data in Work IQ available to Copilot* was **None**.
+34. Added a one-line request log to the MCP server. It showed the agent never called its tools from the app pane: it
+    answered from Work IQ, and the app's `updateContext` payload doesn't reach an authored agent (risk #1, confirmed).
+    The same prompt in Microsoft 365 Copilot did call the tools (silent SSO, OBO, live BC data).
+35. Made tool use reliable: the app's prompt names the customer and the tools, plus `discourage_model_knowledge`, a
+    plugin `description_for_model` and step-by-step instructions. Beat 2 then ran 3/3: three tool calls, the widget in
+    the app's pane, the chase-today list in the control, side panes for the critical invoices.
+36. Fixes from watching it live: badges that wrapped, the same next step in widget and app, a *Collections invoice*
+    form for the side panes (app-builder; the generated one-field form removed from the app), side panes on click
+    instead of automatically, BC fields read-only on the app's forms.
+37. Beat 3: the in-app dashboard included CRONUS ES's own customers (€785k vs €125k); the control now gets the server's
+    customer scope. Widget → app sync worked; app → agent didn't until `get_dashboard` could return the latest dashboard
+    without an id and the app got an **Ask Copilot** button. Typed questions then worked too.
+38. Added a **Build aging dashboard** button (no typing on stage) and fixed the dashboard table's clipped totals.
+    PCF 1.0.9, agent 1.0.4, 113 tests.
+
 ## Still open
 
-- End-to-end run of the three beats in the real app and Copilot pane; real screenshots for the deck (v4),
-  a fallback recording and a rehearsal.
-- Confirm in the tenant: whether `updateContext` reaches the declarative agent (the prompt carries the context too),
-  that `sendPromptToM365Copilot` accepts the `T_….declarativeAgent` id, and that widget actions reach the app's handlers.
+- Deck v4 with screenshots from the tenant run; a timed rehearsal and a fallback recording.
+- The bonus beat (propose a follow-up, confirm in the app) has not been run in the tenant.
 - The week of the session: re-verify the GA/preview map. After it: set `DEMO_AS_OF` empty and redeploy.
