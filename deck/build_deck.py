@@ -221,7 +221,7 @@ def s_three_beats(prs):
     set_text(shape(s, 16), "A specialist opens Fabrikam, a customer with overdue invoices. "
                            "Watch what Copilot knows, and what it does.")
     for label_id, desc_id, label, desc in [
-        (31, 37, "Context", "Grounded in the customer, view and filter"),  # label box widened below
+        (31, 37, "Context", "Grounded in the customer, from one click"),  # label box widened below
         (33, 38, "Action", "Opens invoices, builds today's list"),
         (32, 39, "UI", "A dashboard appears inside the app"),
     ]:
@@ -229,11 +229,11 @@ def s_three_beats(prs):
         set_text(shape(s, label_id), label)
         set_text(shape(s, desc_id), desc)
     notes(s, """DEMO (about 15 min). Switch to the browser.
-1. Open Fabrikam. The Copilot pane opens already grounded: ask "what's going on with this customer?".
-2. Click "Analyze payment behavior". Answer in the pane, critical invoices open in side panes,
-   the grid switches to a prioritized "chase today" list.
-3. Ask: "Build me a dashboard of overdue amounts by customer and aging bucket". It renders in Copilot
-   and inside the app. Change a filter in the app and ask a follow-up: the agent sees the change.
+1. Open Fabrikam. The Copilot pane opens by itself on the Collections agent; the control shows "Copilot has context".
+2. Click "Analyze payment behavior". The answer and a priority-list widget in the pane, the chase-today list in the
+   app; click "Open 3 critical invoices" for the side panes.
+3. Click "Build aging dashboard" and Confirm. It renders in Copilot and inside the app. Remove 90+ in the app,
+   click Ask Copilot: the agent re-reads it and both surfaces match.
 Fallback: mock host (npm run demo) or the recap slides that follow.""")
 
 
@@ -416,7 +416,7 @@ def s_code_app_to_agent(prs):
     code_panel(s, 0.62, 1.9, 7.9, 4.85, APP_TO_AGENT_CODE, size=12, label="PCF · CollectionsBridge")
     tips = [
         ("Guard once", "Every method is a no-op when Copilot is disabled"),
-        ("Belt and braces", "Context also rides inside the prompt, in case updateContext doesn't reach the agent"),
+        ("Context in the prompt", "Confirmed live: authored agents don't receive updateContext yet"),
         ("Target an agent", "gptId sends the prompt to your declarative agent, not the default"),
     ]
     for k, (head, body) in enumerate(tips):
@@ -430,8 +430,8 @@ def s_code_app_to_agent(prs):
 the calls silently do nothing), then updateContext with what is on screen: table, record, view and the FetchXML
 of the current filter. The platform merges in appId, orgId, geo and schema version.
 askCopilot sends a prompt to our agent by gptId. buildGroundedPrompt also appends a one-line [App context]
-summary to the prompt: the maker docs say authored agents can't yet use in-app context, so the grounding
-must not depend on updateContext alone. Verify this in your tenant.""")
+summary to the prompt, or names the customer in it: the maker docs say authored agents can't yet use in-app context,
+and the live run confirmed it. Publish the context anyway, for Microsoft Copilot itself and for when this changes.""")
 
 
 def s_code_agent_to_app(prs):
@@ -530,7 +530,7 @@ def s_shared_state(prs):
         (70, 72, "Widget", "Copilot renders <AgingDashboard>"),
         (74, 76, "Action", "The widget emits RenderDashboard"),
         (75, 77, "PCF", "The app renders the same component"),
-        (71, 73, "Context", "Edits flow back via updateContext"),
+        (71, 73, "Pull", "The agent re-reads the latest spec"),
     ]
     for label_id, desc_id, label, desc in nodes:
         set_text(shape(s, label_id), label)
@@ -539,7 +539,8 @@ def s_shared_state(prs):
     notes(s, """How do two surfaces stay in sync? Make the state explicit: a small JSON dashboard spec stored in Dataverse.
 The agent's tool writes it, the widget renders it in Copilot, the widget emits RenderDashboard, and the PCF
 renders the same React component from the same spec inside the app. When the user changes a filter in the
-app, the PCF updates the spec and calls updateContext, so the next agent turn sees it.
+app, the PCF saves the spec as a new version; the agent doesn't get the app's context, so it re-reads the latest
+spec with get_dashboard (an Ask Copilot button in the app sends that prompt).
 Honest caveat: Copilot does not support onhostcontextchanged for MCP Apps, so you cannot push live updates
 into a widget. Design for event-driven sync with a version number.""")
 
@@ -645,7 +646,7 @@ def s_how_built(prs):
     s = white_title(prs, "How we built it")
     milestones = [
         ("Plan", "Learn docs, the bridge contract, three demo beats", "PLAN.md"),
-        ("Code", "PCF, MCP Apps server, agent, mock host · 107 tests", "TypeScript · React"),
+        ("Code", "PCF, MCP Apps server, agent, mock host · 113 tests", "TypeScript · React"),
         ("Dataverse app", "Tables, views, forms, app and role from an App Spec", "app-builder skill"),
         ("BC demo data", "25 customers, 300 invoices, 269 payments posted", "BC API · OData"),
         ("Azure + Entra", "Container App, SSO, OBO via managed identity", "az · Container Apps"),
@@ -675,7 +676,7 @@ def s_how_built(prs):
         {"t": "deploy/", "font": CODE_FONT, "color": INK},
         {"t": " or a skill from Microsoft's power-platform-skills, so the whole tenant setup can be replayed.", "color": MID_GREY}]}], size=12)
     notes(s, """How the demo was built, end to end, in one working session. Plan from the Learn docs, then the code:
-a PCF bridge, an MCP Apps server, a declarative agent and an offline mock host, with 107 tests.
+a PCF bridge, an MCP Apps server, a declarative agent and an offline mock host, with 113 tests.
 The model-driven app was authored as an App Spec and built with the app-builder skill from Microsoft's
 power-platform-skills. Business Central got 300 invoices and their payments through its API. Azure hosts the MCP
 server with Entra SSO and on-behalf-of to Dataverse through a managed identity, no secrets. The agent was published
@@ -737,6 +738,28 @@ And seeding Business Central: the API can't set posting groups or post payment j
 the published OData pages and a general journal batch.""")
 
 
+def s_sharp_pane(prs):
+    s_sharp_edges(prs, "Sharp edges: the Copilot pane", [
+        ("No Copilot button at all", "isM365CopilotEnabled() was false with app, environment and licence on.", "M365 admin: Business Applications data in Work IQ"),
+        ("Agents don't get the context", "updateContext is published, but an authored agent can't read it yet.", "put the customer in the prompt the app sends"),
+        ("Work IQ answers first", "Vague prompts were answered from Dataverse search, not our tools.", "name the tools; discourage model knowledge"),
+        ("Writing tools ask first", "Any tool without readOnlyHint shows a Confirm card.", "keep it: that's governance, not friction"),
+        ("Two surfaces, one scope", "The app computed its own dashboard over all customers.", "share the server's scope with the control"),
+        ("New chat drops the agent", "The + button starts plain Copilot, not the default agent.", "buttons send by gptId; reopen the pane"),
+    ], """All six found in the end-to-end run in the tenant, the week before the session.
+No Copilot button: isM365CopilotEnabled returned false with the app setting, the environment features and the
+licence all in place. The missing switch was in the Microsoft 365 admin center, under Copilot settings:
+Business Applications data in Work IQ available to Copilot. Check all five switches.
+Context: the app publishes it, but Microsoft documents that authored agents can't use it yet, and that's what we saw.
+So the app's buttons name the customer in the prompt.
+Inside the app the pane grounds on Work IQ, and a vague prompt was answered from Dataverse search: other customers'
+invoices, no payment history. Naming the tools in the prompt, discourage_model_knowledge and explicit instructions
+made it reliable.
+Copilot asks to confirm any tool that isn't read-only. Ours write a dashboard spec to Dataverse, so we keep it.
+The control renders the dashboard from its own queries, so it needs the same customer scope as the server.
+And the pane's new-chat button forgets the default agent; the app's buttons target the agent by id anyway.""")
+
+
 def s_takeaways(prs):
     s = new(prs, T_FOUR_COLS)
     set_text(shape(s, 2), "Key takeaways")
@@ -786,31 +809,34 @@ def build():
     s_scenario(prs)
     s_section(prs, T_SECTION_A, "Live demo", "Switch to the demo. Three moments, one customer: Fabrikam.")
     s_three_beats(prs)
-    s_recap(prs, 1, "Grounded from the first message", "beat1-grounded",
-            "Customer form with the Copilot pane already grounded", [
+    s_recap(prs, 1, "Grounded from the first click", "beat1-grounded",
+            "Live tenant: the app sends a prompt that names Fabrikam (DEMO-C-1001)", [
                 ("isM365CopilotEnabled()", "Guard: license, env, indexing, rollout"),
-                ("updateContext({ … })", "Customer, view and FetchXML filter"),
-                ("openM365CopilotPanel()", "Pane opens with the default agent"),
-            ], """Recap of beat 1. The PCF publishes the customer, the view and the current FetchXML filter as context,
-then opens the Copilot pane. The first question needs no explanation: Copilot already knows it is Fabrikam,
-the Overdue invoices view, filtered to open items.""")
+                ("updateContext({ … })", "Published on load; authored agents can't read it yet"),
+                ("sendPromptToM365Copilot()", "So the prompt names the customer and the tools"),
+            ], """Recap of beat 1, as it runs in the real tenant. The control checks Copilot is enabled, publishes the
+customer, view and filter with updateContext, and opens the pane on our agent. But Microsoft documents that
+agents you author can't yet use in-app context, and we confirmed it: asked "who am I looking at?", the agent
+didn't know. So the context travels in the prompt: one click sends "Use the Collections tools to analyze the
+payment behavior of Fabrikam, Inc. (DEMO-C-1001)". Grounded from the first click, not the first message.""")
     s_recap(prs, 2, "The agent operates the app", "beat2-operate",
-            "Invoices open in side panes, prioritized worklist in the grid", [
+            "Live tenant: chase-today list in the app, critical invoice in a side pane", [
                 ("sendPromptToM365Copilot()", "One click, sent to our agent by gptId"),
-                ("prioritize_collections", "MCP tool scores invoices on live BC data"),
-                ("OpenInvoices · ShowWorklist", "Widget actions open panes, filter the grid"),
-            ], """Recap of beat 2. One click sends a prompt to our agent. It calls MCP tools that analyze payment
-behavior over the open invoices, answers in the pane and renders a priority-list widget. The widget emits
-OpenInvoices and ShowWorklist: the critical invoices open in side panes and the grid switches to exactly
-what to chase today.""")
+                ("prioritize_collections", "MCP tool ranks invoices on live BC data"),
+                ("ShowWorklist · OpenInvoices", "List in the app now; panes when you click"),
+            ], """Recap of beat 2, from the live tenant. One click sends a prompt to our agent. It calls three MCP tools
+in parallel over live Business Central data, answers in the pane and renders a priority-list widget. The
+widget emits ShowWorklist straight away: the control shows what to chase today, with the same next steps.
+OpenInvoices waits for a click: side panes cover the page, so the user decides when they open.""")
     s_recap(prs, 3, "Generative UI on two surfaces", "beat3-dashboard",
-            "The same aging dashboard in Copilot and inside the app", [
+            "Live tenant: changed in the app (v2), re-read by the agent, both in sync", [
                 ("build_aging_dashboard", "Tool writes a DashboardSpec to Dataverse"),
                 ("RenderDashboard", "Widget hands the spec to the app"),
-                ("<AgingDashboard spec />", "Same component on both surfaces"),
-            ], """Recap of beat 3. The user asks for a dashboard. A tool creates a spec, the widget renders it in Copilot
-and emits RenderDashboard, and the PCF renders the same React component from the same spec inside the app.
-Change a filter in the app: the PCF updates the spec and the context, and the agent sees the change.""")
+                ("get_dashboard()", "Agent re-reads the latest version on request"),
+            ], """Recap of beat 3, from the live tenant. A tool creates a spec (Copilot asks to confirm: it writes), the
+widget renders it in Copilot and emits RenderDashboard, and the control renders the same React component from
+the same spec inside the app. Remove 90+ in the app: the spec is saved as v2. Ask Copilot, and the agent re-reads
+the latest version and re-renders the widget, so both surfaces match again. Sync is pull, last write wins.""")
     s_section_architecture(prs)
     s_architecture(prs)
     s_building_blocks(prs)
@@ -828,13 +854,14 @@ Change a filter in the app: the PCF updates the spec and the context, and the ag
     s_licensing(prs)
     s_sharp_bc(prs)
     s_sharp_tooling(prs)
+    s_sharp_pane(prs)
     s_checklist(prs)
     s_takeaways(prs)
     s_resources(prs)
     s_thanks(prs)
 
     drop_slides(prs, n_template)
-    set_sections(prs, [("Opening", 6), ("Live demo", 5), ("Architecture", 10), ("Production", 7), ("Closing", 3)])
+    set_sections(prs, [("Opening", 6), ("Live demo", 5), ("Architecture", 10), ("Production", 8), ("Closing", 3)])
     drop_revision_parts(prs)
     fix_duplicate_shape_ids(prs)
     prs.save(OUTPUT)

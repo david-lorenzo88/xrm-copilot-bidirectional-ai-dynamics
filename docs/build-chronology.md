@@ -194,8 +194,12 @@ flowchart LR
 38. Added a **Build aging dashboard** button (no typing on stage) and fixed the dashboard table's clipped totals.
     PCF 1.0.9, agent 1.0.4, 113 tests.
 
+### 15. Deck v4
+39. Recap slides with screenshots from the tenant run, recap texts and the shared-state slide matching the confirmed
+    behaviour, and a new *Sharp edges: the Copilot pane* slide (32 slides, Open XML SDK validation clean).
+
 ## Still open
 
-- Deck v4 with screenshots from the tenant run; a timed rehearsal and a fallback recording.
+- A timed rehearsal and a fallback recording; cleaner full-width screenshots for the recap slides if wanted.
 - The bonus beat (propose a follow-up, confirm in the app) has not been run in the tenant.
 - The week of the session: re-verify the GA/preview map. After it: set `DEMO_AS_OF` empty and redeploy.
