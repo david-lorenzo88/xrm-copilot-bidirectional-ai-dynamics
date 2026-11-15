@@ -109,8 +109,9 @@ export function registerTools(server: McpServer, repo: CollectionsRepository): v
     "get_dashboard",
     {
       title: "Get dashboard",
-      description: "Current spec and data of a stored dashboard. Use it when the app context carries a dashboardId: the user may have changed filters in the app.",
-      inputSchema: { dashboardId: RecordId },
+      description:
+        "Current spec and data of a stored dashboard, re-rendered here. Call it before saying anything about a dashboard: the user may have changed it in the app since it was rendered in the chat (the version and updatedBy tell). Without dashboardId it returns the most recently changed dashboard.",
+      inputSchema: { dashboardId: RecordId.optional() },
       annotations: { readOnlyHint: true },
       _meta: { ui: { resourceUri: WIDGETS.agingDashboard.uri } },
     },

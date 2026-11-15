@@ -138,6 +138,8 @@ describe("dashboard tools (shared state)", () => {
     const { call } = await connect();
     const r = await call<Dash>("build_aging_dashboard", { groupBy: ["salesperson", "agingBucket"], measures: ["invoiceCount"], filters: { minAmount: 1000 } });
     expect(r.data.data.measure).toBe("invoiceCount");
+    const latest = await call<Dash>("get_dashboard", {});
+    expect(latest.data.spec.id).toBe(r.data.spec.id);
     const missing = await call("get_dashboard", { dashboardId: "0f8fad5b-d9cb-469f-a165-70867728950e" });
     expect(missing.isError).toBe(true);
     const missingUpdate = await call("update_dashboard", { dashboardId: "0f8fad5b-d9cb-469f-a165-70867728950e", patch: {} });

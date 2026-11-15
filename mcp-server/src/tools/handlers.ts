@@ -159,9 +159,10 @@ export async function buildDashboard(repo: CollectionsRepository, { dashboardId,
   return withData(repo, await repo.saveDashboard(spec));
 }
 
-export async function getDashboard(repo: CollectionsRepository, dashboardId: string): Promise<DashboardResult> {
-  const spec = await repo.getDashboard(dashboardId);
-  if (!spec) throw new NotFoundError(`Dashboard not found: ${dashboardId}`);
+/** Without an id: the most recently changed dashboard (the agent rarely gets the app's dashboardId). */
+export async function getDashboard(repo: CollectionsRepository, dashboardId?: string): Promise<DashboardResult> {
+  const spec = dashboardId ? await repo.getDashboard(dashboardId) : await repo.latestDashboard();
+  if (!spec) throw new NotFoundError(dashboardId ? `Dashboard not found: ${dashboardId}` : "No dashboard yet: build one with build_aging_dashboard");
   return withData(repo, spec);
 }
 

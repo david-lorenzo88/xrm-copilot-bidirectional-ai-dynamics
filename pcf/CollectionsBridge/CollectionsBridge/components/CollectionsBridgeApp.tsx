@@ -71,9 +71,16 @@ export function CollectionsBridgeApp({ bridge }: { bridge: CollectionsBridge }) 
             data={s.dashboard.data}
             onFiltersChange={(f) => void bridge.changeDashboardFilters(f)}
             actions={
-              <Button size="small" appearance="subtle" onClick={bridge.closeDashboard}>
-                Close
-              </Button>
+              <>
+                {s.dashboard.spec.updatedBy === "app" && (
+                  <Button size="small" appearance="primary" onClick={() => void bridge.askAboutDashboard()}>
+                    Ask Copilot
+                  </Button>
+                )}
+                <Button size="small" appearance="subtle" onClick={bridge.closeDashboard}>
+                  Close
+                </Button>
+              </>
             }
           />
         </div>

@@ -130,6 +130,11 @@ describe("beat 3: shared dashboard state", () => {
     await bridge.changeDashboardFilters({ bucketIds: ["90+"] });
     expect(data.dashboards.get(spec.id)).toMatchObject({ version: 2, updatedBy: "app", filters: { bucketIds: ["90+"] } });
     expect(contexts.at(-1)).toMatchObject({ dashboardVersion: 2, dashboardFilters: { bucketIds: ["90+"] } });
+    await bridge.askAboutDashboard();
+    expect(vi.mocked(copilot.sendPromptToM365Copilot).mock.calls.at(-1)).toEqual([
+      "Use the Collections tools to read the latest aging dashboard (v2, changed in the app) and tell me what it shows now.",
+      { gptId: "T_collections.agent" },
+    ]);
 
     // An older spec from the widget does not win.
     await copilot.dispatch(ActionIds.RenderDashboard, { spec });
