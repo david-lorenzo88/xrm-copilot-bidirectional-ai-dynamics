@@ -197,6 +197,10 @@ flowchart LR
 ### 15. Deck v4
 39. Recap slides with screenshots from the tenant run, recap texts and the shared-state slide matching the confirmed
     behaviour, and a new *Sharp edges: the Copilot pane* slide (32 slides, Open XML SDK validation clean).
+### 16. Before/after switch (26 Nov)
+40. A demo-only **Share context with Copilot** switch on the control (`SHOW_CONTEXT_SWITCH=true` in `tenant.env`). Off: the
+    app withdraws its context and Analyze asks about "this customer", so the agent asks which one (the instructions forbid
+    guessing from Work IQ). On: the normal grounded prompt. PCF 1.0.10, agent 1.0.5, 114 tests.
 
 ## Still open
 

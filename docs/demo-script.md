@@ -39,35 +39,39 @@ host (fixture numbers such as SI-104008).
 - [ ] One rehearsal run of all three beats on the day, so SSO, the action consent (*Allow*) and the dashboard
       *Confirm* (pick **Always allow** if offered) are already granted.
 - [ ] Old dashboards deleted in *Collection dashboards* (the agent's "the dashboard" means the latest one), so Beat 3 starts at v1.
-- [ ] Side panes from the rehearsal closed.
+- [ ] Side panes from the rehearsal closed. **Share context with Copilot** switched on (it resets to on when the form reloads).
 - [ ] The pane is open on **Collections**. Don't use **+** (new chat) on stage: a new chat starts on plain Copilot, without
       the default agent. For a clean chat, close the pane (**X**) and reopen it with **Copilot** in the header.
 - [ ] Mock fallback running in a second browser tab: `npm run demo` → http://localhost:5173.
 - [ ] Recorded video of each beat on the desktop.
 - [ ] Notifications off, browser zoom 110–125 %, Copilot pane width so the widget shows the whole table.
 
-## Beat 1: Grounded start (2 min)
+## Beat 1: Grounded start, with and without the bridge (3 min)
 
-**Say:** "AI used to live next to the app. Watch what happens when I simply open a customer."
+**Say:** "AI used to live next to the app. Let me show you what that means, then what the bridge changes."
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
-| Sitemap **Customers** → view *Customers with balance* → **Fabrikam, Inc.** | Form *Collections customer* loads. At the top, the CollectionsBridge control: badge **Copilot has context**, *Overdue €73,588.52*. The Copilot pane opens by itself on **Collections** | PCF `updateView` → `isM365CopilotEnabled()` → `updateContext({ entity, customerNo: "DEMO-C-1001", view, filterXML, overdueTotal… })` → `openM365CopilotPanel()` (`autoOpenPanel` = true); the default agent comes from the app's Agents setting |
+| Sitemap **Customers** → view *Customers with balance* → **Fabrikam, Inc.** | Form *Collections customer* loads. The CollectionsBridge control shows **Copilot has context**, *Overdue €73,588.52*, and the Copilot pane opens by itself on **Collections** | `isM365CopilotEnabled()` → `updateContext({...})` → `openM365CopilotPanel()` on the app's default agent |
+| Control → switch **Share context with Copilot** off | Badge turns **No context** | The app withdraws its context (`updateContext` with the table only) and stops naming the customer |
+| Control → **Analyze payment behavior** | The prompt says "…of **this customer**…". The agent asks which customer | `sendPromptToM365Copilot` without the customer; the instructions forbid guessing from Work IQ |
+| Switch **Share context with Copilot** back on → **Analyze payment behavior** | The prompt names **Fabrikam, Inc. (DEMO-C-1001)**; Beat 2 starts from here | Same button, same agent: the only difference is the bridge |
 
-**Say (sharp edge, confirmed live):** "The app publishes its context the moment the form loads. But agents we author
-don't receive it yet; Microsoft documents that. So the app hands the context over in the prompt instead, and that
-is the next beat." Don't type "Who am I looking at?" on stage: the agent can't know, and answers from Work IQ.
+**Say (sharp edge, confirmed live):** "Even with the switch on, the agent doesn't read what the app publishes quietly:
+Microsoft documents that agents you author can't use in-app context yet. So the bridge hands the context over in the
+prompt, and that's what makes the second click work."
 
-**If it fails:** if the pane doesn't open, click **Copilot** in the header. If it opens on plain Copilot, close it
-and reopen it, or type `@Collections`.
+**If it fails:** if the agent guesses a customer while the switch is off, say "it's guessing from search, which is
+exactly the problem", and turn the switch on. If the pane doesn't open, click **Copilot** in the header; if it opens
+on plain Copilot, close and reopen it.
 
-## Beat 2: The agent operates the app (4 min)
+## Beat 2: The agent operates the app (3 min)
 
 **Say:** "Now the app asks the agent, and the agent drives the app."
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
-| Control → **Analyze payment behavior** | The prompt *"Use the Collections tools to analyze the payment behavior of Fabrikam, Inc. (DEMO-C-1001) and prioritize what to chase today."* appears in the pane, sent by the app. The agent: 39.7 days late, worsening 3.8 days/month, risk 85 | `sendPromptToM365Copilot(prompt, { gptId })` with the customer named in the prompt (authored agents don't receive `updateContext`), gptId from the app's default-agent variable → `get_customer_context`, `analyze_payment_behavior`, `prioritize_collections` (2–6 s, live virtual tables) |
+| (from Beat 1) **Analyze payment behavior** with the switch on | The prompt *"Use the Collections tools to analyze the payment behavior of Fabrikam, Inc. (DEMO-C-1001) and prioritize what to chase today."* appears in the pane, sent by the app. The agent: 39.7 days late, worsening 3.8 days/month, risk 85 | `sendPromptToM365Copilot(prompt, { gptId })` with the customer named in the prompt (authored agents don't receive `updateContext`), gptId from the app's default-agent variable → `get_customer_context`, `analyze_payment_behavior`, `prioritize_collections` (2–6 s, live virtual tables) |
 | (no click) | The **priority-list widget** renders in the pane, 103304 at the top (*Call today*); the control switches to **Chase today** in rank order, with the same next steps as the widget | `prioritize_collections` → widget `postMessage({ eventName: 'powerapps.copilot.chat.action', action: 'Contoso.Collections.ShowWorklist' … })` → `addActionHandler` handler → ranked list in the control |
 | Widget → **Open 3 critical invoices** | Side panes open for 103304, 103306, 103307 on the *Collections invoice* form | `OpenInvoices` action → `Xrm.App.sidePanes.createPane` per invoice (opened on click, not automatically: they cover the page) |
 | Click the **103304** side pane | The €48,499.99 invoice, a normal BC sales invoice form over the virtual table | Side pane = record form, live from Business Central |

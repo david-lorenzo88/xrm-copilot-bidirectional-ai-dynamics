@@ -27,6 +27,8 @@ export interface BridgeSettings {
   dashboardPrompt: string;
   /** Optional saved view to switch the grid to on ShowWorklist. */
   worklistViewId?: string;
+  /** Demo: show the "Share context with Copilot" switch (before/after for the bridge). */
+  showContextSwitch?: boolean;
 }
 
 export const DEFAULT_SETTINGS: BridgeSettings = {
@@ -63,6 +65,8 @@ export interface BridgeState {
   dashboard?: { spec: DashboardSpec; data: DashboardData };
   notice?: Notice;
   busy?: boolean;
+  /** False = the app keeps the record to itself: nothing published, prompts don't name the customer. */
+  shareContext: boolean;
 }
 
 export interface CollectionsBridge {
@@ -70,6 +74,8 @@ export interface CollectionsBridge {
   settings: BridgeSettings;
   setRecord(record: RecordInfo): Promise<void>;
   analyze(): Promise<void>;
+  /** Demo switch: share the record with Copilot (default) or not, to show the difference the bridge makes. */
+  setShareContext(on: boolean): Promise<void>;
   /** App → agent: build the aging dashboard (the agent asks to confirm, then it renders in both places). */
   buildDashboard(): Promise<void>;
   changeDashboardFilters(filters: DashboardFilters): Promise<void>;
@@ -86,8 +92,8 @@ export interface CollectionsBridge {
 export function createCollectionsBridge(deps: BridgeDeps): CollectionsBridge {
   const { copilot, data, settings } = deps;
   const today = deps.today ?? (() => formatIsoDate(new Date()));
-  const store = createStore<BridgeState>({ copilot: copilot ? "checking" : "unavailable" });
-  const publish = copilot ? createContextPublisher(copilot) : undefined;
+  const store = createStore<BridgeState>({ copilot: copilot ? "checking" : "unavailable", shareContext: true });
+  let publish = copilot ? createContextPublisher(copilot) : undefined;
   let panelOpened = false;
 
   const notify = (notice: Notice) => store.set({ notice });
@@ -111,7 +117,17 @@ export function createCollectionsBridge(deps: BridgeDeps): CollectionsBridge {
       ...(dashboard ? { dashboardId: dashboard.spec.id, dashboardVersion: dashboard.spec.version, dashboardFilters: dashboard.spec.filters } : {}),
     };
     store.set({ context, customerName: customer?.name });
-    if (!publish) return;
+    if (!publish || !copilot) return;
+    if (!store.get().shareContext) {
+      // Context switched off: still check Copilot and open the pane, but tell it nothing about the record.
+      const enabled = await copilot.isM365CopilotEnabled();
+      store.set({ copilot: enabled ? "enabled" : "disabled" });
+      if (enabled && openPanel && settings.autoOpenPanel && !panelOpened) {
+        await copilot.openM365CopilotPanel();
+        panelOpened = true;
+      }
+      return;
+    }
     const result = await publish(context, openPanel && settings.autoOpenPanel && !panelOpened);
     if (result === "published" && openPanel) panelOpened = true;
     if (result !== "unchanged") store.set({ copilot: result === "disabled" ? "disabled" : "enabled" });
@@ -183,7 +199,20 @@ export function createCollectionsBridge(deps: BridgeDeps): CollectionsBridge {
     async analyze() {
       if (!copilot) return notify({ intent: "warning", text: "Microsoft 365 Copilot is not available in this app" });
       if (store.get().copilot === "disabled") return notify({ intent: "warning", text: "Microsoft 365 Copilot is turned off for this app or user" });
-      await askCopilot(copilot, settings.analyzePrompt, store.get().context, settings.gptId);
+      const { context, shareContext } = store.get();
+      // Without shared context the prompt says "this customer" and nothing else: the agent can't know which.
+      await askCopilot(copilot, settings.analyzePrompt, shareContext ? context : undefined, settings.gptId);
+    },
+    async setShareContext(on) {
+      if (store.get().shareContext === on) return;
+      store.set({ shareContext: on });
+      if (!copilot) return;
+      if (!on) {
+        // Withdraw what was published (only the table stays) and start the de-duplication afresh.
+        await Promise.resolve(copilot.updateContext({ entity: BC_TABLES.customer.logicalName }));
+        publish = createContextPublisher(copilot);
+      }
+      await refreshContext(false).catch((err: Error) => notify({ intent: "error", text: err.message }));
     },
     async buildDashboard() {
       if (!copilot) return notify({ intent: "warning", text: "Microsoft 365 Copilot is not available in this app" });

@@ -82,6 +82,24 @@ describe("beat 2: the agent operates the app", () => {
     expect(options).toEqual({ gptId: "T_collections.agent" });
   });
 
+  it("Share context off: nothing published, the prompt doesn't name the customer; on again: back to normal", async () => {
+    const { bridge, copilot, contexts } = setup();
+    await bridge.setRecord({ customerNo: "C-1001" });
+    const published = contexts.length;
+    await bridge.setShareContext(false);
+    expect(contexts.at(-1)).toEqual({ entity: "dyn365bc_customer_v2_0" }); // withdrawn
+    expect(contexts).toHaveLength(published + 1);
+    expect(bridge.store.get()).toMatchObject({ shareContext: false, copilot: "enabled" });
+    await bridge.analyze();
+    expect(vi.mocked(copilot.sendPromptToM365Copilot).mock.calls.at(-1)![0]).toBe(
+      "Use the Collections tools to analyze the payment behavior of this customer and prioritize what to chase today.",
+    );
+    await bridge.setShareContext(true);
+    expect(contexts.at(-1)).toMatchObject({ customerNo: "C-1001" });
+    await bridge.analyze();
+    expect(vi.mocked(copilot.sendPromptToM365Copilot).mock.calls.at(-1)![0]).toContain("Fabrikam, Inc. (C-1001)");
+  });
+
   it("Build aging dashboard sends the beat-3 prompt to our agent", async () => {
     const { bridge, copilot } = setup();
     await bridge.setRecord({ customerNo: "C-1001" });

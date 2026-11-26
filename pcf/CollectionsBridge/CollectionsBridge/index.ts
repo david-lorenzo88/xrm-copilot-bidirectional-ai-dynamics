@@ -29,6 +29,7 @@ export class CollectionsBridge implements ComponentFramework.ReactControl<IInput
         viewName: p.viewName?.raw || DEFAULT_SETTINGS.viewName,
         analyzePrompt: p.analyzePrompt?.raw || DEFAULT_SETTINGS.analyzePrompt,
         worklistViewId: p.worklistViewId?.raw ?? undefined,
+        showContextSwitch: p.showContextSwitch?.raw ?? false,
       },
     });
   }

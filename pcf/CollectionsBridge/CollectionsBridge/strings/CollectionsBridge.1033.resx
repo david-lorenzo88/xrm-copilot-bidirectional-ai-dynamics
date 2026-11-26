@@ -54,6 +54,12 @@
   <data name="asOfDate_Desc_Key" xml:space="preserve">
     <value>Optional YYYY-MM-DD used as today for ageing (rehearsals). Empty = the real date.</value>
   </data>
+  <data name="showContextSwitch_Display_Key" xml:space="preserve">
+    <value>Show context switch</value>
+  </data>
+  <data name="showContextSwitch_Desc_Key" xml:space="preserve">
+    <value>Demo only: shows a "Share context with Copilot" switch, to compare the agent with and without the record's context.</value>
+  </data>
   <data name="customerNumberPrefix_Display_Key" xml:space="preserve">
     <value>Customer number prefix</value>
   </data>

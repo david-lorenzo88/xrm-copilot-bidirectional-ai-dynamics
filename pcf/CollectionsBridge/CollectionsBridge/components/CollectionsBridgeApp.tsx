@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Badge, Button, Caption1, Spinner, Text, makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
+import { Badge, Button, Caption1, Spinner, Switch, Text, makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
 import { AgingDashboard, PriorityList, formatMoney } from "@collections/ui";
 import type { BridgeState, CollectionsBridge } from "../bridge/bridge";
 
@@ -32,7 +32,7 @@ const copilotBadge = {
 export function CollectionsBridgeApp({ bridge }: { bridge: CollectionsBridge }) {
   const styles = useStyles();
   const s = useBridgeState(bridge);
-  const badge = copilotBadge[s.copilot];
+  const badge = s.copilot === "enabled" && !s.shareContext ? { color: "warning" as const, text: "No context" } : copilotBadge[s.copilot];
   const canAsk = s.copilot === "enabled" && !!s.context;
 
   return (
@@ -43,6 +43,13 @@ export function CollectionsBridgeApp({ bridge }: { bridge: CollectionsBridge }) 
         </Badge>
         <Text weight="semibold">{s.customerName ?? s.record?.customerNo ?? "No customer"}</Text>
         {s.context?.overdueTotal !== undefined && <Caption1>Overdue {formatMoney(s.context.overdueTotal, s.context.currency)}</Caption1>}
+        {bridge.settings.showContextSwitch && (
+          <Switch
+            label="Share context with Copilot"
+            checked={s.shareContext}
+            onChange={(_, d) => void bridge.setShareContext(d.checked)}
+          />
+        )}
         <span className={styles.grow} />
         {s.busy && <Spinner size="tiny" />}
         <Button appearance="primary" disabled={!canAsk} onClick={() => void bridge.analyze()}>
