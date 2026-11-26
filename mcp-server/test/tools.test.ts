@@ -9,7 +9,7 @@ import { connect } from "./helpers";
 const guard = createActionGuard({ allowed: CUSTOM_ACTION_IDS, allowedEntities: WORKLIST_ENTITIES });
 
 describe("tool catalogue", () => {
-  it("lists the eight tools with readOnlyHint and widget links", async () => {
+  it("lists the nine tools with readOnlyHint and widget links", async () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
     const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
@@ -19,11 +19,12 @@ describe("tool catalogue", () => {
       "get_customer_context",
       "get_dashboard",
       "prioritize_collections",
+      "propose_customer_update",
       "propose_follow_up",
       "propose_research_note",
       "update_dashboard",
     ]);
-    for (const name of ["get_customer_context", "analyze_payment_behavior", "prioritize_collections", "get_dashboard", "propose_follow_up", "propose_research_note"]) {
+    for (const name of ["get_customer_context", "analyze_payment_behavior", "prioritize_collections", "get_dashboard", "propose_follow_up", "propose_research_note", "propose_customer_update"]) {
       expect(byName[name]!.annotations?.readOnlyHint, name).toBe(true);
     }
     expect(byName.build_aging_dashboard!.annotations?.readOnlyHint).toBe(false);
@@ -145,6 +146,22 @@ describe("dashboard tools (shared state)", () => {
     expect(missing.isError).toBe(true);
     const missingUpdate = await call("update_dashboard", { dashboardId: "0f8fad5b-d9cb-469f-a165-70867728950e", patch: {} });
     expect(missingUpdate.isError).toBe(true);
+  });
+});
+
+describe("propose_customer_update", () => {
+  it("proposes credit limit and Blocked changes for the app to fill in, and writes nothing", async () => {
+    const { call } = await connect();
+    const r = await call<{ kind: string; customer: { creditLimit: number }; payload: { changes: unknown; reason: string }; actionId: string }>("propose_customer_update", {
+      customerNo: "C-1001",
+      creditLimit: 40000,
+      blocked: "Ship",
+      reason: "Worsening payment behaviour and balance above the limit.",
+    });
+    expect(r.data).toMatchObject({ kind: "customerUpdateProposal", actionId: "Contoso.Collections.ApplyCustomerChanges", payload: { changes: { creditLimit: 40000, blocked: "Ship" } } });
+    expect(r.text).toMatch(/Nothing is changed yet/);
+    expect((await call("propose_customer_update", { customerNo: "C-1001", reason: "nothing to change" })).isError).toBe(true);
+    expect((await call("propose_customer_update", { customerNo: "C-1001", blocked: "Everything", reason: "x" })).isError).toBe(true);
   });
 });
 

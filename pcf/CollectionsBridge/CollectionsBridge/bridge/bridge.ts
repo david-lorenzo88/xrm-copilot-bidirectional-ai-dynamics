@@ -2,6 +2,7 @@ import {
   ActionIds,
   CONTRACT_VERSION,
   applyDashboardPatch,
+  type ApplyCustomerChangesPayload,
   type CollectionsContext,
   type DashboardFilters,
   type DashboardSpec,
@@ -43,12 +44,20 @@ export const DEFAULT_SETTINGS: BridgeSettings = {
   dashboardPrompt: "Use the Collections tools to read the latest aging dashboard ({version}, changed in the app) and tell me what it shows now.",
 };
 
+/** The open form's fields Copilot may fill in. Values are set, never saved: the user saves the form. */
+export interface FormFields {
+  /** Puts the values on the form (unsaved) and returns a short description of each change. */
+  apply(changes: ApplyCustomerChangesPayload["changes"]): string[];
+}
+
 export interface BridgeDeps {
   /** undefined when Xrm.Copilot is missing: the control still works, minus Copilot. */
   copilot?: CopilotApi;
   sidePanes?: SidePanes;
   navigation?: XrmNavigation;
   data: CollectionsDataService;
+  /** Bound form fields (credit limit, blocked); without them ApplyCustomerChanges is refused. */
+  form?: FormFields;
   settings: BridgeSettings;
   today?: () => string;
 }
@@ -178,6 +187,13 @@ export function createCollectionsBridge(deps: BridgeDeps): CollectionsBridge {
         const what = action.data.kind === "research" ? "Research note" : "Follow-up";
         if (id) await loadNotes();
         return notify(id ? { intent: "success", text: `${what} saved to this record` } : { intent: "info", text: `${what} not saved` });
+      }
+      case ActionIds.ApplyCustomerChanges: {
+        const open = store.get().record?.customerNo;
+        if (action.data.customerNo !== open) throw new Error(`Proposed for ${action.data.customerNo}, but ${open ?? "no customer"} is open`);
+        if (!deps.form) throw new Error("This form doesn't let Copilot fill in customer fields");
+        const applied = deps.form.apply(action.data.changes);
+        return notify({ intent: "warning", text: `Copilot filled in ${applied.join(" and ")}. Review and Save to update Business Central.` });
       }
       default:
         throw new Error(`No in-app behaviour for ${action.action}`);

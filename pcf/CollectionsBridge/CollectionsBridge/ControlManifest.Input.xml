@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="Contoso" constructor="CollectionsBridge" version="1.0.11"
+  <control namespace="Contoso" constructor="CollectionsBridge" version="1.0.12"
            display-name-key="CollectionsBridge_Display_Key" description-key="CollectionsBridge_Desc_Key"
            control-type="virtual">
     <external-service-usage enabled="false"></external-service-usage>
@@ -8,6 +8,11 @@
     <!-- Bind to the customer number column on the dyn365bc_customer_v2_0 main form. -->
     <property name="customerNumber" display-name-key="customerNumber_Display_Key" description-key="customerNumber_Desc_Key"
               of-type="SingleLine.Text" usage="bound" required="true" />
+    <!-- Fields Copilot may fill in (never saved by the control: the user saves the form, which writes to BC). -->
+    <property name="creditLimit" display-name-key="creditLimit_Display_Key" description-key="creditLimit_Desc_Key"
+              of-type="Decimal" usage="bound" required="false" />
+    <property name="blocked" display-name-key="blocked_Display_Key" description-key="blocked_Desc_Key"
+              of-type="OptionSet" usage="bound" required="false" />
     <property name="gptId" display-name-key="gptId_Display_Key" description-key="gptId_Desc_Key"
               of-type="SingleLine.Text" usage="input" required="false" />
     <property name="autoOpenPanel" display-name-key="autoOpenPanel_Display_Key" description-key="autoOpenPanel_Desc_Key"

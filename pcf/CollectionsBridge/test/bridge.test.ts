@@ -22,7 +22,7 @@ function fakeCopilot(enabled = true) {
   return { copilot, handlers, contexts };
 }
 
-function setup(enabled = true) {
+function setup(enabled = true, form?: { apply: (changes: Record<string, unknown>) => string[] }) {
   const fake = fakeCopilot(enabled);
   const panes: { options: unknown; navigated: unknown[] }[] = [];
   const sidePanes = {
@@ -35,7 +35,7 @@ function setup(enabled = true) {
   };
   const navigation = { navigateTo: vi.fn(async () => {}), openConfirmDialog: vi.fn(async () => ({ confirmed: true })) };
   const data = new FixtureDataService();
-  const bridge = createCollectionsBridge({ copilot: fake.copilot, sidePanes, navigation, data, settings: { ...DEFAULT_SETTINGS, gptId: "T_collections.agent" }, today: () => FIXTURE_AS_OF });
+  const bridge = createCollectionsBridge({ copilot: fake.copilot, sidePanes, navigation, data, form, settings: { ...DEFAULT_SETTINGS, gptId: "T_collections.agent" }, today: () => FIXTURE_AS_OF });
   return { ...fake, panes, sidePanes, navigation, data, bridge };
 }
 
@@ -202,6 +202,34 @@ describe("LogFollowUp: propose, confirm, write locally", () => {
     expect((vi.mocked(navigation.openConfirmDialog).mock.calls.at(-1) as unknown[])[0]).toMatchObject({ title: "Insert web research from Copilot into this record?", confirmButtonLabel: "Insert research" });
     expect(bridge.store.get().notes?.[0]).toMatchObject({ kind: "research", note: "Portugal: payment delays rising.", sources: [{ url: "https://example.com/report" }] });
     expect(bridge.store.get().notice?.text).toBe("Research note saved to this record");
+  });
+});
+
+describe("ApplyCustomerChanges: Copilot fills the form, the user saves", () => {
+  const payload = { customerNo: "C-1001", changes: { creditLimit: 40000, blocked: "Ship" }, reason: "Worsening" };
+
+  it("fills the open customer's fields (unsaved) and tells the user to review and save", async () => {
+    const apply = vi.fn(() => ["credit limit 60,000 → 40,000", "Blocked → Ship"]);
+    const { copilot, bridge } = setup(true, { apply });
+    await bridge.setRecord({ customerNo: "C-1001" });
+    await copilot.dispatch(ActionIds.ApplyCustomerChanges, payload);
+    expect(apply).toHaveBeenCalledWith({ creditLimit: 40000, blocked: "Ship" });
+    expect(bridge.store.get().notice?.text).toMatch(/Review and Save to update Business Central/);
+  });
+
+  it("refuses a change for another customer, a form without the fields, and fields outside the allow-list", async () => {
+    const apply = vi.fn(() => []);
+    const { copilot, bridge } = setup(true, { apply });
+    await bridge.setRecord({ customerNo: "C-1002" });
+    await copilot.dispatch(ActionIds.ApplyCustomerChanges, payload);
+    expect(bridge.store.get().notice).toMatchObject({ intent: "error" });
+    await copilot.dispatch(ActionIds.ApplyCustomerChanges, { ...payload, customerNo: "C-1002", changes: { email: "x@y.z" } });
+    expect(bridge.store.get().notice).toMatchObject({ intent: "warning", text: expect.stringMatching(/^Ignored/) });
+    expect(apply).not.toHaveBeenCalled();
+    const noForm = setup();
+    await noForm.bridge.setRecord({ customerNo: "C-1001" });
+    await noForm.copilot.dispatch(ActionIds.ApplyCustomerChanges, payload);
+    expect(noForm.bridge.store.get().notice).toMatchObject({ intent: "error" });
   });
 });
 

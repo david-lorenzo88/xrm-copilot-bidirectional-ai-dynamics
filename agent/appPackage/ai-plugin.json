@@ -19,6 +19,10 @@
       "description": "Ranked chase-today worklist; renders the priority-list widget that opens invoices and the worklist in the app."
     },
     {
+      "name": "propose_customer_update",
+      "description": "Proposes a new credit limit and/or Blocked status (Ship, Invoice, All, or unblock) for the customer the user has open; renders a card that fills the open form, which the user reviews and saves (saving writes to Business Central)."
+    },
+    {
       "name": "propose_follow_up",
       "description": "Proposes a follow-up (note, promise-to-pay date); renders a card the user sends to the app, which confirms before storing it."
     },
@@ -56,6 +60,7 @@
         "get_customer_context",
         "analyze_payment_behavior",
         "prioritize_collections",
+        "propose_customer_update",
         "propose_follow_up",
         "propose_research_note",
         "build_aging_dashboard",

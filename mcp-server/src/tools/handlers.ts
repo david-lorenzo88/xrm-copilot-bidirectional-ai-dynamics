@@ -1,5 +1,7 @@
 import {
   ActionIds,
+  ApplyCustomerChangesPayload,
+  type BlockedValue,
   CONTRACT_VERSION,
   applyDashboardPatch,
   createDashboardSpec,
@@ -148,6 +150,35 @@ export async function proposeResearchNote(
   const payload: LogFollowUpPayload = { contractVersion: CONTRACT_VERSION, customerNo: customer.number, note: args.summary, kind: "research" };
   if (args.sources?.length) payload.sources = args.sources;
   return { kind: "followUpProposal", customer: { number: customer.number, name: customer.name }, payload, actionId: ActionIds.LogFollowUp };
+}
+
+export interface CustomerUpdateProposal {
+  kind: "customerUpdateProposal";
+  customer: { number: string; name: string; creditLimit: number; currency: string };
+  /** Sent to the app only when the user clicks "Apply to the form"; the user then saves the form. */
+  payload: ApplyCustomerChangesPayload;
+  actionId: typeof ActionIds.ApplyCustomerChanges;
+}
+
+/**
+ * Proposes changing the open customer's credit limit and/or Blocked status. Writes nothing: the widget
+ * hands it to the app, which fills the form; the user saves, and the virtual table writes to BC.
+ */
+export async function proposeCustomerUpdate(
+  repo: CollectionsRepository,
+  args: { customerNo: string; creditLimit?: number; blocked?: BlockedValue; reason: string },
+): Promise<CustomerUpdateProposal> {
+  const customer = await requireCustomer(repo, { customerNo: args.customerNo });
+  const changes: ApplyCustomerChangesPayload["changes"] = {};
+  if (args.creditLimit !== undefined) changes.creditLimit = args.creditLimit;
+  if (args.blocked !== undefined) changes.blocked = args.blocked;
+  const payload = ApplyCustomerChangesPayload.parse({ contractVersion: CONTRACT_VERSION, customerNo: customer.number, changes, reason: args.reason });
+  return {
+    kind: "customerUpdateProposal",
+    customer: { number: customer.number, name: customer.name, creditLimit: customer.creditLimit, currency: customer.currency },
+    payload,
+    actionId: ActionIds.ApplyCustomerChanges,
+  };
 }
 
 export interface DashboardResult {

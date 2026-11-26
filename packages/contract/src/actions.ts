@@ -8,18 +8,20 @@ export const ActionIds = {
   ShowWorklist: "Contoso.Collections.ShowWorklist",
   RenderDashboard: "Contoso.Collections.RenderDashboard",
   LogFollowUp: "Contoso.Collections.LogFollowUp",
+  ApplyCustomerChanges: "Contoso.Collections.ApplyCustomerChanges",
   OpenRecord: "MS.PA.CopilotChat.OpenRecord",
   NavigateToView: "MS.PA.CopilotChat.NavigateToView",
 } as const;
 
 export type ActionId = (typeof ActionIds)[keyof typeof ActionIds];
 
-/** The four actions this solution handles itself (built-ins stay with the platform). */
+/** The actions this solution handles itself (built-ins stay with the platform). */
 export const CUSTOM_ACTION_IDS = [
   ActionIds.OpenInvoices,
   ActionIds.ShowWorklist,
   ActionIds.RenderDashboard,
   ActionIds.LogFollowUp,
+  ActionIds.ApplyCustomerChanges,
 ] as const;
 export type CustomActionId = (typeof CUSTOM_ACTION_IDS)[number];
 
@@ -65,6 +67,27 @@ export const LogFollowUpPayload = z.object({
   sources: z.array(z.object({ title: z.string().min(1).max(200), url: z.string().url().max(500) })).max(8).optional(),
 });
 
+/** Business Central "Blocked" values ("" = not blocked). */
+export const BLOCKED_VALUES = ["", "Ship", "Invoice", "All"] as const;
+export type BlockedValue = (typeof BLOCKED_VALUES)[number];
+
+/**
+ * Agent proposes, the app fills the open form (unsaved), the user saves: the only fields Copilot may
+ * change, and only on the customer the user has open. Saving writes through the virtual table to BC.
+ */
+export const ApplyCustomerChangesPayload = z.object({
+  contractVersion: ContractVersionField,
+  customerNo: z.string().min(1).max(20),
+  changes: z
+    .object({
+      creditLimit: z.number().min(0).max(1_000_000_000).optional(),
+      blocked: z.enum(BLOCKED_VALUES).optional(),
+    })
+    .strict()
+    .refine((c) => c.creditLimit !== undefined || c.blocked !== undefined, { message: "No change proposed" }),
+  reason: z.string().min(1).max(500),
+});
+
 export const OpenRecordPayload = z.object({ entity: LogicalName, recordId: RecordId });
 export const NavigateToViewPayload = z.object({ entity: LogicalName, fetchXml: FetchXml });
 
@@ -73,6 +96,7 @@ export const ActionPayloadSchemas = {
   [ActionIds.ShowWorklist]: ShowWorklistPayload,
   [ActionIds.RenderDashboard]: RenderDashboardPayload,
   [ActionIds.LogFollowUp]: LogFollowUpPayload,
+  [ActionIds.ApplyCustomerChanges]: ApplyCustomerChangesPayload,
   [ActionIds.OpenRecord]: OpenRecordPayload,
   [ActionIds.NavigateToView]: NavigateToViewPayload,
 } as const satisfies Record<ActionId, z.ZodType>;
@@ -82,6 +106,7 @@ export type OpenInvoicesPayload = ActionPayload<typeof ActionIds.OpenInvoices>;
 export type ShowWorklistPayload = ActionPayload<typeof ActionIds.ShowWorklist>;
 export type RenderDashboardPayload = ActionPayload<typeof ActionIds.RenderDashboard>;
 export type LogFollowUpPayload = ActionPayload<typeof ActionIds.LogFollowUp>;
+export type ApplyCustomerChangesPayload = ActionPayload<typeof ActionIds.ApplyCustomerChanges>;
 export type OpenRecordPayload = ActionPayload<typeof ActionIds.OpenRecord>;
 export type NavigateToViewPayload = ActionPayload<typeof ActionIds.NavigateToView>;
 

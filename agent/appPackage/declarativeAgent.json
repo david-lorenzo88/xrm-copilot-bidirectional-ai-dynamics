@@ -20,6 +20,6 @@
     "special_instructions": { "discourage_model_knowledge": true }
   },
   "disclaimer": {
-    "text": "Read-only towards Business Central. Follow-ups are written to Dataverse only after you confirm them."
+    "text": "Copilot never writes to Business Central itself: credit limit and Blocked changes are filled into the form and saved by you. Notes are stored only after you confirm them."
   }
 }
