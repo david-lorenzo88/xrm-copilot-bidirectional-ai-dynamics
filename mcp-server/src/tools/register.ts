@@ -2,11 +2,11 @@ import { z } from "zod";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { DashboardDimension, DashboardFilters, DashboardMeasure, IsoDate, RecordId } from "@collections/contract";
+import { BLOCKED_VALUES, DashboardDimension, DashboardFilters, DashboardMeasure, IsoDate, RecordId } from "@collections/contract";
 import type { CollectionsRepository } from "../repository/types";
 import { WIDGETS } from "../widgets";
 import * as h from "./handlers";
-import { summarizeBehavior, summarizeContext, summarizeDashboard, summarizeFollowUp, summarizeWorklist } from "./summaries";
+import { summarizeBehavior, summarizeContext, summarizeCustomerUpdate, summarizeDashboard, summarizeFollowUp, summarizeWorklist } from "./summaries";
 
 const customerNo = z.string().min(1).max(100).describe("Business Central customer number (e.g. C-1001) or the start of the customer name");
 const groupBy = z.tuple([DashboardDimension, DashboardDimension]).describe('[rows, columns], default ["customer","agingBucket"]');
@@ -81,6 +81,25 @@ export function registerTools(server: McpServer, repo: CollectionsRepository): v
       _meta: { ui: { resourceUri: WIDGETS.priorityList.uri } },
     },
     (args) => respond(() => h.proposeFollowUp(repo, args), summarizeFollowUp),
+  );
+
+  registerAppTool(
+    server,
+    "propose_customer_update",
+    {
+      title: "Propose customer update",
+      description:
+        "Proposes changing the open customer's credit limit and/or Blocked status in Business Central (for example after a worsening risk analysis). Writes nothing: it renders a card that fills the change into the open form; the user reviews and saves, and saving writes to Business Central through the virtual table. Only these two fields can be changed.",
+      inputSchema: {
+        customerNo,
+        creditLimit: z.number().min(0).max(1_000_000_000).optional().describe("New credit limit in the customer's currency"),
+        blocked: z.enum(BLOCKED_VALUES).optional().describe('New Blocked status: "Ship", "Invoice", "All", or "" to unblock'),
+        reason: z.string().min(1).max(500).describe("One sentence the user sees: why this change"),
+      },
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: WIDGETS.priorityList.uri } },
+    },
+    (args) => respond(() => h.proposeCustomerUpdate(repo, args), summarizeCustomerUpdate),
   );
 
   registerAppTool(

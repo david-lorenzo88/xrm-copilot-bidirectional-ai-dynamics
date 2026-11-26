@@ -322,6 +322,7 @@
                 "dyn365bc_city",
                 "dyn365bc_balancedue",
                 "dyn365bc_creditlimit",
+                "dyn365bc_blocked",
                 "dyn365bc_currencycode",
                 "dyn365bc_salespersoncode"
               ]
@@ -345,9 +346,6 @@
           "readOnly": true
         },
         "dyn365bc_balancedue": {
-          "readOnly": true
-        },
-        "dyn365bc_creditlimit": {
           "readOnly": true
         },
         "dyn365bc_currencycode": {

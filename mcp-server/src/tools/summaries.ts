@@ -1,5 +1,5 @@
 import type { PaymentBehavior } from "@collections/domain";
-import type { DashboardResult, FollowUpProposal, PrioritizeResult, getCustomerContext } from "./handlers";
+import type { CustomerUpdateProposal, DashboardResult, FollowUpProposal, PrioritizeResult, getCustomerContext } from "./handlers";
 
 /** Short, number-rich text for the model. The widget uses structuredContent instead. */
 
@@ -47,6 +47,14 @@ export function summarizeDashboard(r: DashboardResult): string {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+export function summarizeCustomerUpdate(p: CustomerUpdateProposal): string {
+  const c = p.payload.changes;
+  const parts: string[] = [];
+  if (c.creditLimit !== undefined) parts.push(`credit limit ${money(p.customer.creditLimit, p.customer.currency)} → ${money(c.creditLimit, p.customer.currency)}`);
+  if (c.blocked !== undefined) parts.push(`Blocked → ${c.blocked || "not blocked"}`);
+  return `Proposed change for ${p.customer.name} (${p.customer.number}): ${parts.join(", ")}. Reason: ${p.payload.reason}. Nothing is changed yet: the user applies it to the open form from the card, reviews it and saves; saving writes to Business Central.`;
 }
 
 export function summarizeFollowUp(p: FollowUpProposal): string {

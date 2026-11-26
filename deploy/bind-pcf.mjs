@@ -72,8 +72,11 @@ if (!/uniqueid=/.test(newCell)) newCell = newCell.replace(/\/>$/, ` uniqueid="${
 xml = xml.replace(cell, newCell);
 
 // 2. Its control description: fallback text control + the PCF on all three form factors.
+// Fields Copilot may fill in (unsaved; the user saves the form, which writes to Business Central).
+const EDITABLE = { creditLimit: "dyn365bc_creditlimit", blocked: "dyn365bc_blocked" };
 const params = [
   `<customerNumber>${FIELD}</customerNumber>`,
+  ...Object.entries(EDITABLE).filter(([, col]) => new RegExp(`datafieldname="${col}"`).test(xml)).map(([prop, col]) => `<${prop}>${col}</${prop}>`),
   `<gptId static="true" type="SingleLine.Text">${gptId}</gptId>`,
   `<autoOpenPanel static="true" type="TwoOptions">true</autoOpenPanel>`,
   `<viewName static="true" type="SingleLine.Text">Overdue invoices</viewName>`,
@@ -94,6 +97,11 @@ if (existingDesc.test(xml)) xml = xml.replace(existingDesc, description);
 else if (xml.includes("<controlDescriptions>")) xml = xml.replace("<controlDescriptions>", `<controlDescriptions>${description}`);
 else if (xml.includes("<controlDescriptions />")) xml = xml.replace("<controlDescriptions />", `<controlDescriptions>${description}</controlDescriptions>`);
 else xml = xml.replace(/<\/form>\s*$/, `<controlDescriptions>${description}</controlDescriptions></form>`);
+
+// 2b. Unlock the editable cells (app-builder's readOnly can't be cleared by a rebuild).
+for (const col of Object.values(EDITABLE)) {
+  xml = xml.replace(new RegExp(`<control\\b[^>]*\\bdatafieldname="${col}"[^>]*/>`, "g"), (c) => c.replace(/\s+disabled="true"/, ""));
+}
 
 // 3. Hide the cell label: the control renders its own header.
 xml = xml.replace(new RegExp(`(<cell\\b)([^>]*>\\s*<labels>[\\s\\S]*?</labels>\\s*${newCell.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`), (m, a, b) => (/showlabel=/.test(b) ? m : `${a} showlabel="false"${b}`));

@@ -209,6 +209,11 @@ flowchart LR
     customer (country, sector, regulation, never the fictional company). A new `propose_research_note` tool puts a summary
     and sources on a card; the app confirms and saves it, and a **Notes** list on the form shows it. PCF 1.0.11, agent
     1.0.7, 116 tests.
+43. **Copilot fills the form, the user saves**: `propose_customer_update` proposes a new credit limit and/or Blocked
+    status; the control fills them into the open form through bound properties (unsaved); saving writes to Business
+    Central through the virtual table. Blocked added to the form, both fields unlocked by `bind-pcf.mjs`;
+    `deploy/demo-reset.mjs` restores Fabrikam. PCF 1.0.12, agent 1.0.8, 119 tests. Verified in the tenant: saved and
+    visible in Business Central.
 
 ## Still open
 

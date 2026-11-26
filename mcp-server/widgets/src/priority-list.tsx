@@ -2,7 +2,7 @@ import * as React from "react";
 import { Button, Caption1, Card, Text } from "@fluentui/react-components";
 import { ActionIds } from "@collections/contract";
 import { PriorityList } from "@collections/ui";
-import type { FollowUpProposal, PrioritizeResult } from "../../src/tools/handlers";
+import type { CustomerUpdateProposal, FollowUpProposal, PrioritizeResult } from "../../src/tools/handlers";
 import { callTool, postAppAction, useToolResult } from "./host";
 import { ToolError, Waiting, mount } from "./WidgetShell";
 
@@ -57,8 +57,44 @@ function FollowUpCard({ proposal }: { proposal: FollowUpProposal }) {
   );
 }
 
+/** Not a write either: the app fills the open form, and the user saves it. */
+function CustomerUpdateCard({ proposal }: { proposal: CustomerUpdateProposal }) {
+  const [sent, setSent] = React.useState(false);
+  const { payload, customer } = proposal;
+  const fmt = (v: number) => v.toLocaleString(undefined, { style: "currency", currency: customer.currency || "EUR", maximumFractionDigits: 0 });
+  return (
+    <Card style={{ margin: 12 }}>
+      <Text weight="semibold">Change {customer.name} in Business Central?</Text>
+      <Caption1>{customer.number}</Caption1>
+      {payload.changes.creditLimit !== undefined && (
+        <Text>
+          Credit limit: {fmt(customer.creditLimit)} → <b>{fmt(payload.changes.creditLimit)}</b>
+        </Text>
+      )}
+      {payload.changes.blocked !== undefined && (
+        <Text>
+          Blocked: → <b>{payload.changes.blocked || "not blocked"}</b>
+        </Text>
+      )}
+      <Caption1>{payload.reason}</Caption1>
+      <div>
+        <Button
+          appearance="primary"
+          disabled={sent}
+          onClick={() => {
+            postAppAction(ActionIds.ApplyCustomerChanges, payload);
+            setSent(true);
+          }}
+        >
+          {sent ? "Filled in the form: review and Save there" : "Apply to the form"}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 function PriorityListWidget() {
-  const [result, setResult, error] = useToolResult<PrioritizeResult | FollowUpProposal>();
+  const [result, setResult, error] = useToolResult<PrioritizeResult | FollowUpProposal | CustomerUpdateProposal>();
   const applied = React.useRef<string | undefined>(undefined);
   const worklist = result && !("kind" in result) ? result : undefined;
 
@@ -72,7 +108,7 @@ function PriorityListWidget() {
 
   if (error) return <ToolError message={error} />;
   if (!result) return <Waiting label="Prioritizing overdue invoices…" />;
-  if ("kind" in result) return <FollowUpCard proposal={result} />;
+  if ("kind" in result) return result.kind === "customerUpdateProposal" ? <CustomerUpdateCard proposal={result} /> : <FollowUpCard proposal={result} />;
 
   const refresh = async () => {
     const { result: r } = await callTool<PrioritizeResult>("prioritize_collections", { customerNo: result.scope.customerNo, applyInApp: false });

@@ -39,6 +39,7 @@ host (fixture numbers such as SI-104008).
 - [ ] One rehearsal run of all three beats on the day, so SSO, the action consent (*Allow*) and the dashboard
       *Confirm* (pick **Always allow** if offered) are already granted.
 - [ ] Old dashboards deleted in *Collection dashboards* (the agent's "the dashboard" means the latest one), so Beat 3 starts at v1.
+- [ ] After the rehearsal: `node deploy/demo-reset.mjs` (Fabrikam back to 60,000, not blocked; `--all` also clears dashboards and notes).
 - [ ] Side panes from the rehearsal closed.
 - [ ] A Microsoft 365 Copilot tab (m365.cloud.microsoft/chat) open on the **Collections** agent, new chat, for Beat 1.
 - [ ] The pane is open on **Collections**. Don't use **+** (new chat) on stage: a new chat starts on plain Copilot, without
@@ -116,6 +117,19 @@ Run in the tenant on 26 Nov: the note appeared on the form with its sources. Ski
 
 **Say:** "The agent researches, the app writes, and only after I confirm. Web facts are context; the numbers still come
 from the tools." Demo customers are fictional, so the research is about the country and sector, not the company.
+
+## Bonus 3 (if time): Copilot fills the form, you save to Business Central (2 min)
+
+Run in the tenant on 26 Nov: the fields filled in, saved, and Business Central showed the change. After each run, `node deploy/demo-reset.mjs` puts Fabrikam back.
+
+| Click / type | What the audience sees | Under the hood |
+|---|---|---|
+| After Beat 2, type: **"Fabrikam is high risk: reduce the credit limit to 40,000 and block shipments"** | A card: **Change Fabrikam, Inc. in Business Central?** Credit limit €60,000 → **€40,000**, Blocked → **Ship**, with the reason | `propose_customer_update` (writes nothing) |
+| Card → **Apply to the form** | On the form, **Credit Limit** shows 40,000 and **Blocked** shows Ship, unsaved; the control says "Review and Save to update Business Central" | `ApplyCustomerChanges` (allow-list: 2 fields, open customer only) → bound properties → `getOutputs` |
+| Form → **Save** | Saved. Optional: open Fabrikam in Business Central: credit limit 40,000, Blocked = Ship | Dataverse virtual table → Business Central API, as the signed-in user |
+
+**Say:** "The agent never writes to the ERP. It proposes, the app fills the form, and I save, with Business Central's own
+validation and my own permissions."
 
 ## Bonus 2 (if time): propose a follow-up, then confirm (1 min)
 

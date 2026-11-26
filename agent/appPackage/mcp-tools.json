@@ -153,6 +153,61 @@
       }
     },
     {
+      "name": "propose_customer_update",
+      "title": "Propose customer update",
+      "description": "Proposes changing the open customer's credit limit and/or Blocked status in Business Central (for example after a worsening risk analysis). Writes nothing: it renders a card that fills the change into the open form; the user reviews and saves, and saving writes to Business Central through the virtual table. Only these two fields can be changed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerNo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Business Central customer number (e.g. C-1001) or the start of the customer name"
+          },
+          "creditLimit": {
+            "description": "New credit limit in the customer's currency",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "blocked": {
+            "description": "New Blocked status: \"Ship\", \"Invoice\", \"All\", or \"\" to unblock",
+            "type": "string",
+            "enum": [
+              "",
+              "Ship",
+              "Invoice",
+              "All"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "One sentence the user sees: why this change"
+          }
+        },
+        "required": [
+          "customerNo",
+          "reason"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://collections/priority-list"
+        },
+        "ui/resourceUri": "ui://collections/priority-list"
+      }
+    },
+    {
       "name": "propose_research_note",
       "title": "Propose research note",
       "description": "After a web search about a customer's context (sector, country, late-payment trends, insolvencies, regulation), proposes inserting a short summary with its sources into the customer's record. Writes nothing: it renders a card the user sends to the app, where they confirm before anything is stored.",
