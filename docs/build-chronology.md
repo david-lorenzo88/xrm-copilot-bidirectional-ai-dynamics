@@ -212,7 +212,8 @@ flowchart LR
 43. **Copilot fills the form, the user saves**: `propose_customer_update` proposes a new credit limit and/or Blocked
     status; the control fills them into the open form through bound properties (unsaved); saving writes to Business
     Central through the virtual table. Blocked added to the form, both fields unlocked by `bind-pcf.mjs`;
-    `deploy/demo-reset.mjs` restores Fabrikam. PCF 1.0.12, agent 1.0.8, 119 tests.
+    `deploy/demo-reset.mjs` restores Fabrikam. PCF 1.0.12, agent 1.0.8, 119 tests. Verified in the tenant: saved and
+    visible in Business Central.
 
 ## Still open
 

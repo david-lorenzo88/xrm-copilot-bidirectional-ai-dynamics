@@ -120,7 +120,7 @@ from the tools." Demo customers are fictional, so the research is about the coun
 
 ## Bonus 3 (if time): Copilot fills the form, you save to Business Central (2 min)
 
-Not yet run in the tenant: rehearse it, then run `node deploy/demo-reset.mjs` to put Fabrikam back.
+Run in the tenant on 26 Nov: the fields filled in, saved, and Business Central showed the change. After each run, `node deploy/demo-reset.mjs` puts Fabrikam back.
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
