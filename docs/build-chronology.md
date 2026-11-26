@@ -201,6 +201,10 @@ flowchart LR
 40. A demo-only **Share context with Copilot** switch on the control (`SHOW_CONTEXT_SWITCH=true` in `tenant.env`). Off: the
     app withdraws its context and Analyze asks about "this customer", so the agent asks which one (the instructions forbid
     guessing from Work IQ). On: the normal grounded prompt. PCF 1.0.10, agent 1.0.5, 114 tests.
+41. Testing the switch showed the pane passes the **open record** to the agent anyway: with the app's context withdrawn,
+    it called `get_customer_context` with the record id. Only our own `updateContext` keys don't arrive. The switch was
+    taken off the demo form (`SHOW_CONTEXT_SWITCH=false`; the code stays), Beat 1 now starts outside the app in Microsoft
+    365 Copilot, and the agent uses the open record when the prompt names no customer. Agent 1.0.6.
 
 ## Still open
 

@@ -85,7 +85,7 @@ the week before you ship, and date-stamp it.
 ## Gotchas (from the docs and from building this)
 
 - [ ] ⚠️ **Preview APIs**: `executeEvent` / `executePrompt` (Copilot Studio) are preview and not used here. `updateContext` is listed as GA in the reference index but "preview" on the maker page. The app designer's Agents panel is preview.
-- [ ] 🧪 **Risk #1, confirmed**: an authored declarative agent does **not** receive the `updateContext` payload (Microsoft: "Agents you author can't yet use in-app user context"). Asked "who am I looking at?", it answered from Work IQ. Mitigation in the code: the app's buttons send prompts that name the customer (`Fabrikam, Inc. (DEMO-C-1001)`) and the dashboard version; `get_dashboard` without an id returns the latest dashboard.
+- [ ] 🧪 **Risk #1, refined (26 Nov)**: inside the app the pane **does** give our agent the open record. With the app's context withdrawn and a prompt saying only "this customer", the agent called `get_customer_context` with the record's id, then used `DEMO-C-1001`. What does **not** reach it is our own `updateContext` payload (customer number, view, filter, totals, dashboard version); Microsoft: "Agents you author can't yet use in-app user context". So the app's buttons name the customer and the dashboard version in the prompt, and `get_dashboard` without an id returns the latest dashboard. Consequence: an app can't hide the open record from the agent, so a "no context" demo has to run outside the app.
 - [ ] 🧪 **Tool routing in the app pane**: inside the model-driven app the pane grounds on Work IQ, and a vague prompt was answered from Dataverse search (other customers' invoices, no payment history) without calling the MCP server. No manifest field forces action calls. What made it reliable (3/3, then every run): prompts that name the tools ("Use the Collections tools to …"), `behavior_overrides.special_instructions.discourage_model_knowledge`, a plugin `description_for_model` that rules out search results, and step-by-step instructions that name each action. Typed questions about the dashboard also worked once `get_dashboard` needed no id.
 - [ ] 🧪 **New chat drops the default agent**: the pane's **+** starts plain Copilot; the default agent applies when the pane opens. Prompts sent with `sendPromptToM365Copilot(…, { gptId })` still reach the agent.
 - [ ] 🧪 **Confirmation for writing tools**: Copilot shows a *Confirm* card for any tool without `readOnlyHint` (here `build_aging_dashboard`, `update_dashboard`). Keep it: the tools do write (to Dataverse). The first call of the action also shows *Allow*.
@@ -107,7 +107,7 @@ Resolved in the tenant (15 Nov 2026 end-to-end run):
 - BC virtual table and entity set names, the customer lookup, the custom ledger API table name.
 - The default-agent id format (`T_<id>.declarativeAgent`, read from the environment variable); `sendPromptToM365Copilot`
   accepts it as `gptId` and submits the prompt.
-- `updateContext` does **not** reach an authored declarative agent (risk #1, see Gotchas).
+- Our `updateContext` payload does **not** reach an authored declarative agent, but the pane passes the open record's id (risk #1, see Gotchas).
 - `window.parent.parent` is the right target in the Copilot-in-app host: widget actions (`ShowWorklist`, `OpenInvoices`,
   `RenderDashboard`) reach the PCF handlers, and the audit table records each one.
 - The Entra SSO registration shape (silent SSO, only the action's *Allow* consent).

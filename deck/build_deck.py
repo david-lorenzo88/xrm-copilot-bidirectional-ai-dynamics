@@ -416,7 +416,7 @@ def s_code_app_to_agent(prs):
     code_panel(s, 0.62, 1.9, 7.9, 4.85, APP_TO_AGENT_CODE, size=12, label="PCF · CollectionsBridge")
     tips = [
         ("Guard once", "Every method is a no-op when Copilot is disabled"),
-        ("Context in the prompt", "Confirmed live: authored agents don't receive updateContext yet"),
+        ("Context in the prompt", "The pane passes the open record; our own context keys don't arrive"),
         ("Target an agent", "gptId sends the prompt to your declarative agent, not the default"),
     ]
     for k, (head, body) in enumerate(tips):
@@ -430,8 +430,9 @@ def s_code_app_to_agent(prs):
 the calls silently do nothing), then updateContext with what is on screen: table, record, view and the FetchXML
 of the current filter. The platform merges in appId, orgId, geo and schema version.
 askCopilot sends a prompt to our agent by gptId. buildGroundedPrompt also appends a one-line [App context]
-summary to the prompt, or names the customer in it: the maker docs say authored agents can't yet use in-app context,
-and the live run confirmed it. Publish the context anyway, for Microsoft Copilot itself and for when this changes.""")
+summary to the prompt, or names the customer in it. In the live tenant the pane does give our agent the open record,
+but not what we publish on top (customer number, view, filter, totals): the maker docs say authored agents can't yet
+use in-app context. Publish it anyway, for Microsoft Copilot itself and for when this changes.""")
 
 
 def s_code_agent_to_app(prs):
@@ -539,7 +540,7 @@ def s_shared_state(prs):
     notes(s, """How do two surfaces stay in sync? Make the state explicit: a small JSON dashboard spec stored in Dataverse.
 The agent's tool writes it, the widget renders it in Copilot, the widget emits RenderDashboard, and the PCF
 renders the same React component from the same spec inside the app. When the user changes a filter in the
-app, the PCF saves the spec as a new version; the agent doesn't get the app's context, so it re-reads the latest
+app, the PCF saves the spec as a new version; the app's context keys don't reach the agent, so it re-reads the latest
 spec with get_dashboard (an Ask Copilot button in the app sends that prompt).
 Honest caveat: Copilot does not support onhostcontextchanged for MCP Apps, so you cannot push live updates
 into a widget. Design for event-driven sync with a version number.""")
@@ -741,7 +742,7 @@ the published OData pages and a general journal batch.""")
 def s_sharp_pane(prs):
     s_sharp_edges(prs, "Sharp edges: the Copilot pane", [
         ("No Copilot button at all", "isM365CopilotEnabled() was false with app, environment and licence on.", "M365 admin: Business Applications data in Work IQ"),
-        ("Agents don't get the context", "updateContext is published, but an authored agent can't read it yet.", "put the customer in the prompt the app sends"),
+        ("Record yes, context no", "The pane passes the open record; our updateContext keys don't arrive.", "put the customer and view in the prompt the app sends"),
         ("Work IQ answers first", "Vague prompts were answered from Dataverse search, not our tools.", "name the tools; discourage model knowledge"),
         ("Writing tools ask first", "Any tool without readOnlyHint shows a Confirm card.", "keep it: that's governance, not friction"),
         ("Two surfaces, one scope", "The app computed its own dashboard over all customers.", "share the server's scope with the control"),
@@ -750,8 +751,9 @@ def s_sharp_pane(prs):
 No Copilot button: isM365CopilotEnabled returned false with the app setting, the environment features and the
 licence all in place. The missing switch was in the Microsoft 365 admin center, under Copilot settings:
 Business Applications data in Work IQ available to Copilot. Check all five switches.
-Context: the app publishes it, but Microsoft documents that authored agents can't use it yet, and that's what we saw.
-So the app's buttons name the customer in the prompt.
+Context: inside the app the pane does give our agent the open record; we saw it call our tool with the record id.
+What doesn't arrive is what the app publishes on top: customer number, view, filter, totals. Microsoft documents that
+authored agents can't use in-app context yet. So the app's buttons name the customer in the prompt.
 Inside the app the pane grounds on Work IQ, and a vague prompt was answered from Dataverse search: other customers'
 invoices, no payment history. Naming the tools in the prompt, discourage_model_knowledge and explicit instructions
 made it reliable.
@@ -812,13 +814,14 @@ def build():
     s_recap(prs, 1, "Grounded from the first click", "beat1-grounded",
             "Live tenant: the app sends a prompt that names Fabrikam (DEMO-C-1001)", [
                 ("isM365CopilotEnabled()", "Guard: license, env, indexing, rollout"),
-                ("updateContext({ … })", "Published on load; authored agents can't read it yet"),
+                ("updateContext({ … })", "Published on load; our keys don't reach the agent yet"),
                 ("sendPromptToM365Copilot()", "So the prompt names the customer and the tools"),
-            ], """Recap of beat 1, as it runs in the real tenant. The control checks Copilot is enabled, publishes the
-customer, view and filter with updateContext, and opens the pane on our agent. But Microsoft documents that
-agents you author can't yet use in-app context, and we confirmed it: asked "who am I looking at?", the agent
-didn't know. So the context travels in the prompt: one click sends "Use the Collections tools to analyze the
-payment behavior of Fabrikam, Inc. (DEMO-C-1001)". Grounded from the first click, not the first message.""")
+            ], """Recap of beat 1, as it runs in the real tenant. Outside the app, in Microsoft 365 Copilot, the same agent
+asked "which customer?". Inside the app the control checks Copilot is enabled, publishes the customer, view and
+filter with updateContext, and opens the pane on our agent. The pane tells the agent which record is open, but not
+what the app publishes on top: Microsoft documents that agents you author can't yet use in-app context. So the
+context travels in the prompt: one click sends "Use the Collections tools to analyze the payment behavior of
+Fabrikam, Inc. (DEMO-C-1001)". Grounded from the first click, not the first message.""")
     s_recap(prs, 2, "The agent operates the app", "beat2-operate",
             "Live tenant: chase-today list in the app, critical invoice in a side pane", [
                 ("sendPromptToM365Copilot()", "One click, sent to our agent by gptId"),

@@ -39,31 +39,31 @@ host (fixture numbers such as SI-104008).
 - [ ] One rehearsal run of all three beats on the day, so SSO, the action consent (*Allow*) and the dashboard
       *Confirm* (pick **Always allow** if offered) are already granted.
 - [ ] Old dashboards deleted in *Collection dashboards* (the agent's "the dashboard" means the latest one), so Beat 3 starts at v1.
-- [ ] Side panes from the rehearsal closed. **Share context with Copilot** switched on (it resets to on when the form reloads).
+- [ ] Side panes from the rehearsal closed.
+- [ ] A Microsoft 365 Copilot tab (m365.cloud.microsoft/chat) open on the **Collections** agent, new chat, for Beat 1.
 - [ ] The pane is open on **Collections**. Don't use **+** (new chat) on stage: a new chat starts on plain Copilot, without
       the default agent. For a clean chat, close the pane (**X**) and reopen it with **Copilot** in the header.
 - [ ] Mock fallback running in a second browser tab: `npm run demo` → http://localhost:5173.
 - [ ] Recorded video of each beat on the desktop.
 - [ ] Notifications off, browser zoom 110–125 %, Copilot pane width so the widget shows the whole table.
 
-## Beat 1: Grounded start, with and without the bridge (3 min)
+## Beat 1: Outside the app, then inside (3 min)
 
-**Say:** "AI used to live next to the app. Let me show you what that means, then what the bridge changes."
+**Say:** "AI used to live next to the app. Same agent, two places: first next to the app, then inside it."
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
-| Sitemap **Customers** → view *Customers with balance* → **Fabrikam, Inc.** | Form *Collections customer* loads. The CollectionsBridge control shows **Copilot has context**, *Overdue €73,588.52*, and the Copilot pane opens by itself on **Collections** | `isM365CopilotEnabled()` → `updateContext({...})` → `openM365CopilotPanel()` on the app's default agent |
-| Control → switch **Share context with Copilot** off | Badge turns **No context** | The app withdraws its context (`updateContext` with the table only) and stops naming the customer |
-| Control → **Analyze payment behavior** | The prompt says "…of **this customer**…". The agent asks which customer | `sendPromptToM365Copilot` without the customer; the instructions forbid guessing from Work IQ |
-| Switch **Share context with Copilot** back on → **Analyze payment behavior** | The prompt names **Fabrikam, Inc. (DEMO-C-1001)**; Beat 2 starts from here | Same button, same agent: the only difference is the bridge |
+| Microsoft 365 Copilot (m365.cloud.microsoft/chat) → agent **Collections** → type *"Analyze this customer's payment behavior and tell me what to chase today."* | The agent asks which customer | Outside the app there is no open record and no app: the agent can't know |
+| Switch to the app: Sitemap **Customers** → view *Customers with balance* → **Fabrikam, Inc.** | Form *Collections customer* loads; the control shows **Copilot has context**, *Overdue €73,588.52*; the pane opens by itself on **Collections** | `isM365CopilotEnabled()` → `updateContext({...})` → `openM365CopilotPanel()` on the app's default agent |
+| Control → **Analyze payment behavior** | The prompt names **Fabrikam, Inc. (DEMO-C-1001)**; Beat 2 starts from here | `sendPromptToM365Copilot(prompt, { gptId })`: one click, the right agent, the right customer |
 
-**Say (sharp edge, confirmed live):** "Even with the switch on, the agent doesn't read what the app publishes quietly:
-Microsoft documents that agents you author can't use in-app context yet. So the bridge hands the context over in the
-prompt, and that's what makes the second click work."
+**Say (what the platform gives, what the bridge adds):** "Inside the app, the pane already knows which record is
+open. What it doesn't pass to our agent is what the app knows on top: the customer number, the view and its filter,
+the totals. So the bridge puts that in the prompt, and then it lets the agent act on the app, which is the next beat."
 
-**If it fails:** if the agent guesses a customer while the switch is off, say "it's guessing from search, which is
-exactly the problem", and turn the switch on. If the pane doesn't open, click **Copilot** in the header; if it opens
-on plain Copilot, close and reopen it.
+**If it fails:** if the agent outside the app guesses a customer, say "it's guessing, which is exactly the problem",
+and go to the app. If the pane doesn't open, click **Copilot** in the header; if it opens on plain Copilot, close and
+reopen it.
 
 ## Beat 2: The agent operates the app (3 min)
 
