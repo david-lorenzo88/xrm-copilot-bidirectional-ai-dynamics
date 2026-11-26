@@ -104,7 +104,20 @@ it changes nothing visible.
 **If it fails:** if the dashboard doesn't appear in the app, click **Show in app** in the widget. If the agent
 answers about the old version, click **Ask Copilot** in the app (the prompt names the tools).
 
-## Bonus (if time): propose, then confirm (1 min)
+## Bonus (if time): research online, then insert into the record (2 min)
+
+Optional: rehearse it first; skip it if web search misbehaves.
+
+| Click / type | What the audience sees | Under the hood |
+|---|---|---|
+| Control → **Research online** | The prompt asks for the payment and credit climate around Fabrikam, Inc. (DEMO-C-1001), based in Lisbon: late-payment trends, insolvencies, regulation, "don't search for the company itself" | `sendPromptToM365Copilot` with `gptId`; the agent has the WebSearch capability |
+| (no click) | The agent searches the web and shows a card: **Insert this research into the record?** with a short summary and source links | `propose_research_note` (writes nothing) |
+| Card → **Insert into record** → **Insert research** in the app's dialog | The **Notes** list on the form shows the note with its sources | `LogFollowUp` action (kind research) → confirm dialog → a `ppn_collectionaction` row. Nothing goes to Business Central |
+
+**Say:** "The agent researches, the app writes, and only after I confirm. Web facts are context; the numbers still come
+from the tools." Demo customers are fictional, so the research is about the country and sector, not the company.
+
+## Bonus 2 (if time): propose a follow-up, then confirm (1 min)
 
 Not yet run in the tenant: rehearse it before using it on stage.
 

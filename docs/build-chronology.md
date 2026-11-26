@@ -205,6 +205,10 @@ flowchart LR
     it called `get_customer_context` with the record id. Only our own `updateContext` keys don't arrive. The switch was
     taken off the demo form (`SHOW_CONTEXT_SWITCH=false`; the code stays), Beat 1 now starts outside the app in Microsoft
     365 Copilot, and the agent uses the open record when the prompt names no customer. Agent 1.0.6.
+42. **Research online**: the agent gets Microsoft's web search capability and researches the payment climate around the
+    customer (country, sector, regulation, never the fictional company). A new `propose_research_note` tool puts a summary
+    and sources on a card; the app confirms and saves it, and a **Notes** list on the form shows it. PCF 1.0.11, agent
+    1.0.7, 116 tests.
 
 ## Still open
 
