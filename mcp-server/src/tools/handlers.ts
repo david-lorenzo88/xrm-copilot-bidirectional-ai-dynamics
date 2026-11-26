@@ -136,6 +136,20 @@ export async function proposeFollowUp(
   return { kind: "followUpProposal", customer: { number: customer.number, name: customer.name }, payload, actionId: ActionIds.LogFollowUp };
 }
 
+/**
+ * Proposes a research note (context from web search: sector, country, regulation). Same path as a
+ * follow-up: writes nothing; the widget hands it to the app, which confirms and stores it.
+ */
+export async function proposeResearchNote(
+  repo: CollectionsRepository,
+  args: { customerNo: string; summary: string; sources?: { title: string; url: string }[] },
+): Promise<FollowUpProposal> {
+  const customer = await requireCustomer(repo, { customerNo: args.customerNo });
+  const payload: LogFollowUpPayload = { contractVersion: CONTRACT_VERSION, customerNo: customer.number, note: args.summary, kind: "research" };
+  if (args.sources?.length) payload.sources = args.sources;
+  return { kind: "followUpProposal", customer: { number: customer.number, name: customer.name }, payload, actionId: ActionIds.LogFollowUp };
+}
+
 export interface DashboardResult {
   spec: DashboardSpec;
   data: DashboardData;

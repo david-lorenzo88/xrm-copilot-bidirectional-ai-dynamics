@@ -10,6 +10,9 @@
     { "title": "Aging dashboard", "text": "Build me a dashboard of overdue by customer and aging bucket." },
     { "title": "90+ drivers", "text": "Which customers drive the 90+ bucket, and what should I do about them?" }
   ],
+  "capabilities": [
+    { "name": "WebSearch" }
+  ],
   "actions": [
     { "id": "collectionsMcp", "file": "ai-plugin.json" }
   ],

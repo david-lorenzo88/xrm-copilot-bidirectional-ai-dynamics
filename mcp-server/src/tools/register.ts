@@ -85,6 +85,24 @@ export function registerTools(server: McpServer, repo: CollectionsRepository): v
 
   registerAppTool(
     server,
+    "propose_research_note",
+    {
+      title: "Propose research note",
+      description:
+        "After a web search about a customer's context (sector, country, late-payment trends, insolvencies, regulation), proposes inserting a short summary with its sources into the customer's record. Writes nothing: it renders a card the user sends to the app, where they confirm before anything is stored.",
+      inputSchema: {
+        customerNo,
+        summary: z.string().min(1).max(2000).describe("Plain-text summary for a collections specialist: 4-8 short bullet lines, each with the fact and why it matters"),
+        sources: z.array(z.object({ title: z.string().min(1).max(200), url: z.string().url().max(500) })).max(8).optional().describe("The web pages the summary relies on"),
+      },
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: WIDGETS.priorityList.uri } },
+    },
+    (args) => respond(() => h.proposeResearchNote(repo, args), summarizeFollowUp),
+  );
+
+  registerAppTool(
+    server,
     "build_aging_dashboard",
     {
       title: "Build aging dashboard",

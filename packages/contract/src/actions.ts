@@ -59,6 +59,10 @@ export const LogFollowUpPayload = z.object({
   promiseDate: IsoDate.optional(),
   promisedAmount: z.number().min(0).optional(),
   invoiceIds: z.array(RecordId).max(20).optional(),
+  /** "research": a web-research note the agent proposed (stored the same way, labelled differently). */
+  kind: z.enum(["followUp", "research"]).optional(),
+  /** Web sources behind a research note. */
+  sources: z.array(z.object({ title: z.string().min(1).max(200), url: z.string().url().max(500) })).max(8).optional(),
 });
 
 export const OpenRecordPayload = z.object({ entity: LogicalName, recordId: RecordId });

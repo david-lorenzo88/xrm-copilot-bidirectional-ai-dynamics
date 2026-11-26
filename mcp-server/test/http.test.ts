@@ -28,7 +28,7 @@ describe("HTTP transport", () => {
     const client = new Client({ name: "http-test", version: "1.0.0" });
     await client.connect(new StreamableHTTPClientTransport(new URL(`${base}/mcp`)));
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(7);
+    expect(tools).toHaveLength(8);
     const r = await client.callTool({ name: "prioritize_collections", arguments: { customerNo: "C-1001", limit: 3 } });
     expect((r.structuredContent as { items: unknown[] }).items).toHaveLength(3);
     await client.close();

@@ -20,7 +20,24 @@ export interface CollectionsDataService {
   /** Last write wins on spec.version; returns what is stored afterwards. */
   saveDashboard(spec: DashboardSpec): Promise<DashboardSpec>;
   createFollowUp(payload: LogFollowUpPayload): Promise<string>;
+  /** Confirmed follow-ups and research notes for a customer, newest first. */
+  listNotes(customerNo: string, top?: number): Promise<CustomerNote[]>;
   audit(entry: AuditEntry): Promise<void>;
+}
+
+export interface CustomerNote {
+  id: string;
+  kind: "followUp" | "research";
+  title: string;
+  note: string;
+  sources: { title: string; url: string }[];
+  createdOn: string;
+}
+
+/** Stored note text: the summary, then its sources (the column holds 4,000 characters). */
+export function noteText(p: LogFollowUpPayload): string {
+  const sources = p.sources?.length ? `\n\nSources:\n${p.sources.map((s) => `- ${s.title}: ${s.url}`).join("\n")}` : "";
+  return (p.note + sources).slice(0, 4000);
 }
 
 export interface AuditEntry {
@@ -98,10 +115,10 @@ export class WebApiDataService implements CollectionsDataService {
   async createFollowUp(p: LogFollowUpPayload): Promise<string> {
     const c = ACT.columns;
     const res = await this.webApi.createRecord(ACT.logicalName, {
-      [c.name]: `Follow-up ${p.customerNo}${p.promiseDate ? ` (promise ${p.promiseDate})` : ""}`,
+      [c.name]: p.kind === "research" ? `Research ${p.customerNo}` : `Follow-up ${p.customerNo}${p.promiseDate ? ` (promise ${p.promiseDate})` : ""}`,
       [c.actionId]: "Contoso.Collections.LogFollowUp",
       [c.customerNo]: p.customerNo,
-      [c.note]: p.note,
+      [c.note]: noteText(p),
       [c.promiseDate]: p.promiseDate ?? null,
       [c.promisedAmount]: p.promisedAmount ?? null,
       [c.payloadJson]: JSON.stringify(p),
@@ -109,6 +126,28 @@ export class WebApiDataService implements CollectionsDataService {
       [c.outcome]: "confirmed",
     });
     return res.id;
+  }
+
+  async listNotes(customerNo: string, top = 5): Promise<CustomerNote[]> {
+    const c = ACT.columns;
+    const filter = `${c.customerNo} eq ${odata(customerNo)} and ${c.actionId} eq 'Contoso.Collections.LogFollowUp' and ${c.outcome} eq 'confirmed'`;
+    const res = await this.webApi.retrieveMultipleRecords(ACT.logicalName, `?$select=${c.name},${c.note},${c.payloadJson},createdon&$filter=${filter}&$orderby=createdon desc&$top=${top}`);
+    return res.entities.map((r) => {
+      let p: Partial<LogFollowUpPayload> = {};
+      try {
+        p = JSON.parse(String(r[c.payloadJson] ?? "{}")) as Partial<LogFollowUpPayload>;
+      } catch {
+        /* older rows: note only */
+      }
+      return {
+        id: String(r[c.id] ?? ""),
+        kind: p.kind === "research" ? "research" : "followUp",
+        title: String(r[c.name] ?? ""),
+        note: p.note ?? String(r[c.note] ?? ""),
+        sources: p.sources ?? [],
+        createdOn: String(r.createdon ?? ""),
+      };
+    });
   }
 
   async audit(e: AuditEntry): Promise<void> {

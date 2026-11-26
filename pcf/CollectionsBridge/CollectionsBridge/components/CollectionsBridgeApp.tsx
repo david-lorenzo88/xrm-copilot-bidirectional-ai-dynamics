@@ -13,6 +13,9 @@ const useStyles = makeStyles({
   warning: { color: tokens.colorPaletteDarkOrangeForeground1 },
   success: { color: tokens.colorPaletteGreenForeground1 },
   info: { color: tokens.colorNeutralForeground2 },
+  notes: { display: "flex", flexDirection: "column", gap: tokens.spacingVerticalS, padding: tokens.spacingVerticalM },
+  note: { display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS, paddingTop: tokens.spacingVerticalS, borderTop: `1px solid ${tokens.colorNeutralStroke2}` },
+  noteText: { whiteSpace: "pre-wrap" },
 });
 
 function useBridgeState(bridge: CollectionsBridge): BridgeState {
@@ -58,6 +61,9 @@ export function CollectionsBridgeApp({ bridge }: { bridge: CollectionsBridge }) 
         <Button appearance="secondary" disabled={!canAsk} onClick={() => void bridge.buildDashboard()}>
           Build aging dashboard
         </Button>
+        <Button appearance="secondary" disabled={!canAsk} onClick={() => void bridge.research()}>
+          Research online
+        </Button>
       </div>
 
       {s.notice && <Text className={mergeClasses(styles.notice, styles[s.notice.intent])}>{s.notice.text}</Text>}
@@ -71,6 +77,33 @@ export function CollectionsBridgeApp({ bridge }: { bridge: CollectionsBridge }) 
               Close list
             </Button>
           </div>
+        </div>
+      )}
+
+      {s.notes && s.notes.length > 0 && (
+        <div className={mergeClasses(styles.panel, styles.notes)}>
+          <Text weight="semibold">Notes</Text>
+          {s.notes.map((n) => (
+            <div key={n.id} className={styles.note}>
+              <Caption1>
+                {n.kind === "research" ? "Web research" : "Follow-up"} · {n.createdOn ? new Date(n.createdOn).toLocaleString() : ""}
+              </Caption1>
+              <Text className={styles.noteText}>{n.note}</Text>
+              {n.sources.length > 0 && (
+                <Caption1>
+                  Sources:{" "}
+                  {n.sources.map((src, i) => (
+                    <React.Fragment key={src.url}>
+                      {i > 0 && " · "}
+                      <a href={src.url} target="_blank" rel="noreferrer">
+                        {src.title}
+                      </a>
+                    </React.Fragment>
+                  ))}
+                </Caption1>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

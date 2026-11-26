@@ -50,6 +50,9 @@ export function summarizeDashboard(r: DashboardResult): string {
 }
 
 export function summarizeFollowUp(p: FollowUpProposal): string {
+  if (p.payload.kind === "research") {
+    return `Proposed research note for ${p.customer.name} (${p.customer.number}) with ${p.payload.sources?.length ?? 0} source(s). Nothing is stored yet: the user inserts it into the record from the card and confirms in the app.`;
+  }
   const promise = p.payload.promiseDate ? ` Promise to pay by ${p.payload.promiseDate}${p.payload.promisedAmount !== undefined ? ` (${p.payload.promisedAmount.toFixed(2)})` : ""}.` : "";
   return `Proposed follow-up for ${p.customer.name} (${p.customer.number}): "${p.payload.note}".${promise} Nothing is logged yet: the user sends it to the app from the card and confirms there.`;
 }

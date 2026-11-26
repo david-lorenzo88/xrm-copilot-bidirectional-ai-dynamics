@@ -23,6 +23,10 @@
       "description": "Proposes a follow-up (note, promise-to-pay date); renders a card the user sends to the app, which confirms before storing it."
     },
     {
+      "name": "propose_research_note",
+      "description": "After web research on a customer's context (country, sector, late-payment trends, regulation), proposes a summary with sources; renders a card the user sends to the app, which confirms before storing it in the record."
+    },
+    {
       "name": "build_aging_dashboard",
       "description": "Creates or revises an aging dashboard spec and renders it here and in the app."
     },
@@ -53,6 +57,7 @@
         "analyze_payment_behavior",
         "prioritize_collections",
         "propose_follow_up",
+        "propose_research_note",
         "build_aging_dashboard",
         "get_dashboard",
         "update_dashboard"
