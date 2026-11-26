@@ -42,7 +42,7 @@ the week before you ship, and date-stamp it.
 - [ ] 🔧 **DLP**: classify the MCP endpoint/connector; block it from personal environments.
 - [ ] ✅ **Audit of agent-initiated actions**: every handled, rejected or failed action is written to `ppn_collectionaction` (`bridge.ts` → `data.audit`). 🔧 Turn on Dataverse auditing and a retention policy for that table.
 - [ ] ⚠️ **Data residency**: the platform adds `geo` to the context. The demo runs Dataverse in the US and the Container App in `eastus`; keep the server in the same geography as Dataverse.
-- [ ] ✅ **Read-only to the ERP**: no code path writes to BC. Writes go to `ppn_collectiondashboard` (spec) and `ppn_collectionaction` (audit, follow-ups).
+- [ ] ✅ **The agent never writes to the ERP itself**: no MCP tool writes to BC. The one ERP change is user-driven: `propose_customer_update` → the app fills **credit limit / Blocked** on the open form (allow-listed fields, open customer only) → the **user saves**, and the virtual table writes to BC as that user. Other writes go to `ppn_collectiondashboard` (spec) and `ppn_collectionaction` (audit, follow-ups, research notes). 🔧 Give users BC permission to change customers only if they should; BC validates on save.
 
 ## Security
 
