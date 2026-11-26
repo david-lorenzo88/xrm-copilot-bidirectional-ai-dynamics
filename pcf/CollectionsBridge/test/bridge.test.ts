@@ -73,13 +73,41 @@ describe("beat 1: context publishing", () => {
 });
 
 describe("beat 2: the agent operates the app", () => {
-  it("sends the analyze prompt to our agent with context embedded", async () => {
+  it("sends the analyze prompt to our agent, naming the customer", async () => {
     const { bridge, copilot } = setup();
     await bridge.setRecord({ customerNo: "C-1001" });
     await bridge.analyze();
     const [prompt, options] = vi.mocked(copilot.sendPromptToM365Copilot).mock.calls[0]!;
-    expect(prompt).toMatch(/Analyze this customer's payment behavior[\s\S]*\[App context\] Customer C-1001 Fabrikam/);
+    expect(prompt).toBe("Use the Collections tools to analyze the payment behavior of Fabrikam, Inc. (C-1001) and prioritize what to chase today.");
     expect(options).toEqual({ gptId: "T_collections.agent" });
+  });
+
+  it("Share context off: nothing published, the prompt doesn't name the customer; on again: back to normal", async () => {
+    const { bridge, copilot, contexts } = setup();
+    await bridge.setRecord({ customerNo: "C-1001" });
+    const published = contexts.length;
+    await bridge.setShareContext(false);
+    expect(contexts.at(-1)).toEqual({ entity: "dyn365bc_customer_v2_0" }); // withdrawn
+    expect(contexts).toHaveLength(published + 1);
+    expect(bridge.store.get()).toMatchObject({ shareContext: false, copilot: "enabled" });
+    await bridge.analyze();
+    expect(vi.mocked(copilot.sendPromptToM365Copilot).mock.calls.at(-1)![0]).toBe(
+      "Use the Collections tools to analyze the payment behavior of this customer and prioritize what to chase today.",
+    );
+    await bridge.setShareContext(true);
+    expect(contexts.at(-1)).toMatchObject({ customerNo: "C-1001" });
+    await bridge.analyze();
+    expect(vi.mocked(copilot.sendPromptToM365Copilot).mock.calls.at(-1)![0]).toContain("Fabrikam, Inc. (C-1001)");
+  });
+
+  it("Build aging dashboard sends the beat-3 prompt to our agent", async () => {
+    const { bridge, copilot } = setup();
+    await bridge.setRecord({ customerNo: "C-1001" });
+    await bridge.buildDashboard();
+    expect(vi.mocked(copilot.sendPromptToM365Copilot).mock.calls.at(-1)).toEqual([
+      "Use the Collections tools to build me a dashboard of overdue by customer and aging bucket.",
+      { gptId: "T_collections.agent" },
+    ]);
   });
 
   it("OpenInvoices opens one side pane per invoice", async () => {
@@ -130,6 +158,11 @@ describe("beat 3: shared dashboard state", () => {
     await bridge.changeDashboardFilters({ bucketIds: ["90+"] });
     expect(data.dashboards.get(spec.id)).toMatchObject({ version: 2, updatedBy: "app", filters: { bucketIds: ["90+"] } });
     expect(contexts.at(-1)).toMatchObject({ dashboardVersion: 2, dashboardFilters: { bucketIds: ["90+"] } });
+    await bridge.askAboutDashboard();
+    expect(vi.mocked(copilot.sendPromptToM365Copilot).mock.calls.at(-1)).toEqual([
+      "Use the Collections tools to read the latest aging dashboard (v2, changed in the app) and tell me what it shows now.",
+      { gptId: "T_collections.agent" },
+    ]);
 
     // An older spec from the widget does not win.
     await copilot.dispatch(ActionIds.RenderDashboard, { spec });
@@ -150,7 +183,25 @@ describe("LogFollowUp: propose, confirm, write locally", () => {
     navigation.openConfirmDialog.mockResolvedValueOnce({ confirmed: false });
     await copilot.dispatch(ActionIds.LogFollowUp, { customerNo: "C-1001", note: "second" });
     expect(data.actionLog.filter((e) => e.kind === "followUp")).toHaveLength(1);
-    expect(bridge.store.get().notice?.text).toBe("Follow-up not logged");
+    expect(bridge.store.get().notice?.text).toBe("Follow-up not saved");
+  });
+
+  it("research: the button asks the agent for context research; a confirmed note shows on the form with its sources", async () => {
+    const { copilot, navigation, bridge } = setup();
+    await bridge.setRecord({ customerNo: "C-1001" });
+    await bridge.research();
+    const prompt = vi.mocked(copilot.sendPromptToM365Copilot).mock.calls.at(-1)![0];
+    expect(prompt).toMatch(/^Use web search to research the payment and credit climate for Fabrikam, Inc\. \(C-1001\)/);
+    expect(prompt).toContain("Don't search for the company itself");
+    await copilot.dispatch(ActionIds.LogFollowUp, {
+      customerNo: "C-1001",
+      kind: "research",
+      note: "Portugal: payment delays rising.",
+      sources: [{ title: "Example source", url: "https://example.com/report" }],
+    });
+    expect((vi.mocked(navigation.openConfirmDialog).mock.calls.at(-1) as unknown[])[0]).toMatchObject({ title: "Insert web research from Copilot into this record?", confirmButtonLabel: "Insert research" });
+    expect(bridge.store.get().notes?.[0]).toMatchObject({ kind: "research", note: "Portugal: payment delays rising.", sources: [{ url: "https://example.com/report" }] });
+    expect(bridge.store.get().notice?.text).toBe("Research note saved to this record");
   });
 });
 

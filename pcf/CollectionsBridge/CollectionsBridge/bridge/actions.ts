@@ -30,7 +30,7 @@ export async function openInvoicesInSidePanes(sidePanes: SidePanes, { invoiceIds
  */
 export async function loadWorklist(data: CollectionsDataService, payload: ShowWorklistPayload, asOf: string): Promise<{ title: string; items: WorklistItem[] }> {
   const invoices = await data.runFetchXml(payload.fetchXml);
-  return { title: payload.title, items: rankedWorklist(invoices, payload.invoiceIds ?? [], asOf) };
+  return { title: payload.title, items: rankedWorklist(invoices, payload.invoiceIds ?? [], asOf, payload.suggestedActions) };
 }
 
 /**
@@ -56,8 +56,15 @@ export async function computeDashboard(data: CollectionsDataService, spec: Dashb
 
 /** Agent proposes, user confirms: the only write path, and it stays in Dataverse (never BC). */
 export async function confirmAndLogFollowUp(navigation: XrmNavigation, data: CollectionsDataService, p: LogFollowUpPayload): Promise<string | undefined> {
+  const research = p.kind === "research";
   const lines = [`Customer ${p.customerNo}`, p.note];
   if (p.promiseDate) lines.push(`Promise to pay: ${p.promiseDate}${p.promisedAmount ? ` (${p.promisedAmount.toFixed(2)})` : ""}`);
-  const { confirmed } = await navigation.openConfirmDialog({ title: "Log follow-up proposed by Copilot?", text: lines.join("\n"), confirmButtonLabel: "Log follow-up", cancelButtonLabel: "Cancel" });
+  if (p.sources?.length) lines.push(`Sources: ${p.sources.map((s) => s.title).join(" · ")}`);
+  const { confirmed } = await navigation.openConfirmDialog({
+    title: research ? "Insert web research from Copilot into this record?" : "Log follow-up proposed by Copilot?",
+    text: lines.join("\n"),
+    confirmButtonLabel: research ? "Insert research" : "Log follow-up",
+    cancelButtonLabel: "Cancel",
+  });
   return confirmed ? data.createFollowUp(p) : undefined;
 }

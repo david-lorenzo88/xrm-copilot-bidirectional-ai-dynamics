@@ -56,7 +56,7 @@ export function registerTools(server: McpServer, repo: CollectionsRepository): v
         customerNo: customerNo.optional(),
         limit: z.int().min(1).max(50).optional(),
         minDaysOverdue: z.int().min(0).max(365).optional(),
-        applyInApp: z.boolean().optional().describe("Open critical invoices and the worklist in the app straight away (default true; navigation only)"),
+        applyInApp: z.boolean().optional().describe("Show the chase-today worklist in the app straight away (default true; navigation only). Critical invoices open in side panes only when the user clicks in the widget"),
       },
       annotations: { readOnlyHint: true },
       _meta: { ui: { resourceUri: WIDGETS.priorityList.uri } },
@@ -85,6 +85,24 @@ export function registerTools(server: McpServer, repo: CollectionsRepository): v
 
   registerAppTool(
     server,
+    "propose_research_note",
+    {
+      title: "Propose research note",
+      description:
+        "After a web search about a customer's context (sector, country, late-payment trends, insolvencies, regulation), proposes inserting a short summary with its sources into the customer's record. Writes nothing: it renders a card the user sends to the app, where they confirm before anything is stored.",
+      inputSchema: {
+        customerNo,
+        summary: z.string().min(1).max(2000).describe("Plain-text summary for a collections specialist: 4-8 short bullet lines, each with the fact and why it matters"),
+        sources: z.array(z.object({ title: z.string().min(1).max(200), url: z.string().url().max(500) })).max(8).optional().describe("The web pages the summary relies on"),
+      },
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: WIDGETS.priorityList.uri } },
+    },
+    (args) => respond(() => h.proposeResearchNote(repo, args), summarizeFollowUp),
+  );
+
+  registerAppTool(
+    server,
     "build_aging_dashboard",
     {
       title: "Build aging dashboard",
@@ -109,8 +127,9 @@ export function registerTools(server: McpServer, repo: CollectionsRepository): v
     "get_dashboard",
     {
       title: "Get dashboard",
-      description: "Current spec and data of a stored dashboard. Use it when the app context carries a dashboardId: the user may have changed filters in the app.",
-      inputSchema: { dashboardId: RecordId },
+      description:
+        "Current spec and data of a stored dashboard, re-rendered here. Call it before saying anything about a dashboard: the user may have changed it in the app since it was rendered in the chat (the version and updatedBy tell). Without dashboardId it returns the most recently changed dashboard.",
+      inputSchema: { dashboardId: RecordId.optional() },
       annotations: { readOnlyHint: true },
       _meta: { ui: { resourceUri: WIDGETS.agingDashboard.uri } },
     },

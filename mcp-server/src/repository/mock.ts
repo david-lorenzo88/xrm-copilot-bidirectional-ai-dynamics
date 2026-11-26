@@ -40,6 +40,10 @@ export class MockRepository implements CollectionsRepository {
     return this.dashboards.get(id);
   }
 
+  async latestDashboard(): Promise<DashboardSpec | undefined> {
+    return [...this.dashboards.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+  }
+
   /** Last write wins on `version` (ties broken by updatedAt). */
   async saveDashboard(spec: DashboardSpec): Promise<DashboardSpec> {
     const current = this.dashboards.get(spec.id);

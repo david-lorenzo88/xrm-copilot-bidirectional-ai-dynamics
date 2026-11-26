@@ -11,6 +11,9 @@
     "mainForms": {
       "dyn365bc_customer_v2_0": [
         "Collections customer"
+      ],
+      "dyn365bc_salesinvoice_v2_0": [
+        "Collections invoice"
       ]
     }
   },
@@ -333,7 +336,93 @@
           "label": "Overdue invoices",
           "tab": "tab_collections"
         }
-      ]
+      ],
+      "fieldOptions": {
+        "dyn365bc_displayname": {
+          "readOnly": true
+        },
+        "dyn365bc_city": {
+          "readOnly": true
+        },
+        "dyn365bc_balancedue": {
+          "readOnly": true
+        },
+        "dyn365bc_creditlimit": {
+          "readOnly": true
+        },
+        "dyn365bc_currencycode": {
+          "readOnly": true
+        },
+        "dyn365bc_salespersoncode": {
+          "readOnly": true
+        }
+      }
+    },
+    {
+      "entity": "dyn365bc_salesinvoice_v2_0",
+      "type": "main",
+      "name": "Collections invoice",
+      "description": "Posted sales invoice as a collections specialist sees it in a side pane opened by the agent: who owes it, how much is left and since when.",
+      "tabs": [
+        {
+          "name": "tab_invoice",
+          "label": "Invoice",
+          "sections": [
+            {
+              "name": "sec_amounts",
+              "label": "Amounts",
+              "columns": 2,
+              "fields": [
+                "dyn365bc_number",
+                "dyn365bc_status",
+                "dyn365bc_remainingamount",
+                "dyn365bc_totalamountincludingtax",
+                "dyn365bc_currencycode"
+              ]
+            },
+            {
+              "name": "sec_dates",
+              "label": "Customer and dates",
+              "columns": 2,
+              "fields": [
+                "dyn365bc_customername",
+                "dyn365bc_customernumber",
+                "dyn365bc_invoicedate",
+                "dyn365bc_duedate"
+              ]
+            }
+          ]
+        }
+      ],
+      "fieldOptions": {
+        "dyn365bc_number": {
+          "readOnly": true
+        },
+        "dyn365bc_status": {
+          "readOnly": true
+        },
+        "dyn365bc_remainingamount": {
+          "readOnly": true
+        },
+        "dyn365bc_totalamountincludingtax": {
+          "readOnly": true
+        },
+        "dyn365bc_currencycode": {
+          "readOnly": true
+        },
+        "dyn365bc_customername": {
+          "readOnly": true
+        },
+        "dyn365bc_customernumber": {
+          "readOnly": true
+        },
+        "dyn365bc_invoicedate": {
+          "readOnly": true
+        },
+        "dyn365bc_duedate": {
+          "readOnly": true
+        }
+      }
     },
     {
       "entity": "ppn_collectiondashboard",

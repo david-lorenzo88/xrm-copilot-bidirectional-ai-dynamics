@@ -85,7 +85,7 @@
             "maximum": 365
           },
           "applyInApp": {
-            "description": "Open critical invoices and the worklist in the app straight away (default true; navigation only)",
+            "description": "Show the chase-today worklist in the app straight away (default true; navigation only). Critical invoices open in side panes only when the user clicks in the widget",
             "type": "boolean"
           }
         },
@@ -136,6 +136,69 @@
         "required": [
           "customerNo",
           "note"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://collections/priority-list"
+        },
+        "ui/resourceUri": "ui://collections/priority-list"
+      }
+    },
+    {
+      "name": "propose_research_note",
+      "title": "Propose research note",
+      "description": "After a web search about a customer's context (sector, country, late-payment trends, insolvencies, regulation), proposes inserting a short summary with its sources into the customer's record. Writes nothing: it renders a card the user sends to the app, where they confirm before anything is stored.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerNo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Business Central customer number (e.g. C-1001) or the start of the customer name"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Plain-text summary for a collections specialist: 4-8 short bullet lines, each with the fact and why it matters"
+          },
+          "sources": {
+            "description": "The web pages the summary relies on",
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "title",
+                "url"
+              ]
+            }
+          }
+        },
+        "required": [
+          "customerNo",
+          "summary"
         ],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
@@ -276,7 +339,7 @@
     {
       "name": "get_dashboard",
       "title": "Get dashboard",
-      "description": "Current spec and data of a stored dashboard. Use it when the app context carries a dashboardId: the user may have changed filters in the app.",
+      "description": "Current spec and data of a stored dashboard, re-rendered here. Call it before saying anything about a dashboard: the user may have changed it in the app since it was rendered in the chat (the version and updatedBy tell). Without dashboardId it returns the most recently changed dashboard.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -286,9 +349,6 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
           }
         },
-        "required": [
-          "dashboardId"
-        ],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "annotations": {

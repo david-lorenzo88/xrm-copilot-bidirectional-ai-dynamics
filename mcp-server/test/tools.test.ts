@@ -9,7 +9,7 @@ import { connect } from "./helpers";
 const guard = createActionGuard({ allowed: CUSTOM_ACTION_IDS, allowedEntities: WORKLIST_ENTITIES });
 
 describe("tool catalogue", () => {
-  it("lists the six tools with readOnlyHint and widget links", async () => {
+  it("lists the eight tools with readOnlyHint and widget links", async () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
     const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
@@ -20,9 +20,10 @@ describe("tool catalogue", () => {
       "get_dashboard",
       "prioritize_collections",
       "propose_follow_up",
+      "propose_research_note",
       "update_dashboard",
     ]);
-    for (const name of ["get_customer_context", "analyze_payment_behavior", "prioritize_collections", "get_dashboard", "propose_follow_up"]) {
+    for (const name of ["get_customer_context", "analyze_payment_behavior", "prioritize_collections", "get_dashboard", "propose_follow_up", "propose_research_note"]) {
       expect(byName[name]!.annotations?.readOnlyHint, name).toBe(true);
     }
     expect(byName.build_aging_dashboard!.annotations?.readOnlyHint).toBe(false);
@@ -138,10 +139,27 @@ describe("dashboard tools (shared state)", () => {
     const { call } = await connect();
     const r = await call<Dash>("build_aging_dashboard", { groupBy: ["salesperson", "agingBucket"], measures: ["invoiceCount"], filters: { minAmount: 1000 } });
     expect(r.data.data.measure).toBe("invoiceCount");
+    const latest = await call<Dash>("get_dashboard", {});
+    expect(latest.data.spec.id).toBe(r.data.spec.id);
     const missing = await call("get_dashboard", { dashboardId: "0f8fad5b-d9cb-469f-a165-70867728950e" });
     expect(missing.isError).toBe(true);
     const missingUpdate = await call("update_dashboard", { dashboardId: "0f8fad5b-d9cb-469f-a165-70867728950e", patch: {} });
     expect(missingUpdate.isError).toBe(true);
+  });
+});
+
+describe("propose_research_note", () => {
+  it("proposes a research note with sources and writes nothing", async () => {
+    const { call } = await connect();
+    const r = await call<{ kind: string; payload: { kind?: string; sources?: unknown[]; note: string }; actionId: string }>("propose_research_note", {
+      customerNo: "C-1001",
+      summary: "Portugal: average payment delays rose in 2026; EU late payment rules allow interest after 60 days.",
+      sources: [{ title: "Example source", url: "https://example.com/report" }],
+    });
+    expect(r.data).toMatchObject({ kind: "followUpProposal", actionId: "Contoso.Collections.LogFollowUp", payload: { kind: "research", customerNo: "C-1001" } });
+    expect(r.data.payload.sources).toHaveLength(1);
+    expect(r.text).toMatch(/Nothing is stored yet/);
+    expect((await call("propose_research_note", { customerNo: "C-1001", summary: "x", sources: [{ title: "bad", url: "not a url" }] })).isError).toBe(true);
   });
 });
 

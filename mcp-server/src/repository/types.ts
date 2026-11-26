@@ -23,6 +23,8 @@ export interface CollectionsRepository {
   findCustomer(ref: { customerNo?: string; customerId?: string }): Promise<Customer | undefined>;
   listInvoices(query: InvoiceQuery): Promise<Invoice[]>;
   getDashboard(id: string): Promise<DashboardSpec | undefined>;
+  /** The most recently changed dashboard the caller can read (agent or app), if any. */
+  latestDashboard(): Promise<DashboardSpec | undefined>;
   saveDashboard(spec: DashboardSpec): Promise<DashboardSpec>;
 }
 

@@ -33,6 +33,8 @@ describe("FetchXML builders", () => {
   it("builds the open-invoice query for the dashboard", () => {
     expect(buildOpenInvoicesFetchXml(["C-1001", "C&2"])).toContain("<value>C&amp;2</value>");
     expect(buildOpenInvoicesFetchXml()).not.toContain('operator="in"');
+    expect(buildOpenInvoicesFetchXml(undefined, "DEMO-C-")).toContain('operator="like" value="DEMO-C-%"');
+    expect(buildOpenInvoicesFetchXml(["C-1"], "DEMO-C-")).not.toContain("like");
   });
 
   it("builds the prioritised worklist", () => {

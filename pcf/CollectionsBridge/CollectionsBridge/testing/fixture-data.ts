@@ -1,7 +1,7 @@
 import { isNewerSpec, type DashboardSpec, type LogFollowUpPayload } from "@collections/contract";
 import { BC_TABLES, type Customer, type Invoice } from "@collections/domain";
 import { fixtures as defaultFixtures, type FixtureSet } from "@collections/domain/fixtures";
-import type { AuditEntry, CollectionsDataService } from "../bridge/data";
+import type { AuditEntry, CollectionsDataService, CustomerNote } from "../bridge/data";
 
 /**
  * In-memory CollectionsDataService over the demo fixtures. Used by the mock host
@@ -54,6 +54,17 @@ export class FixtureDataService implements CollectionsDataService {
     const id = `followup-${++this.seq}`;
     this.actionLog.push({ id, kind: "followUp", at: new Date().toISOString(), actionId: "Contoso.Collections.LogFollowUp", outcome: "handled", customerNo: p.customerNo, payload: p, detail: p.note });
     return id;
+  }
+
+  async listNotes(customerNo: string, top = 5): Promise<CustomerNote[]> {
+    return this.actionLog
+      .filter((e) => e.kind === "followUp" && e.customerNo === customerNo)
+      .reverse()
+      .slice(0, top)
+      .map((e) => {
+        const p = e.payload as LogFollowUpPayload;
+        return { id: e.id, kind: p.kind === "research" ? "research" : "followUp", title: p.kind === "research" ? `Research ${p.customerNo}` : `Follow-up ${p.customerNo}`, note: p.note, sources: p.sources ?? [], createdOn: e.at };
+      });
   }
 
   async audit(entry: AuditEntry): Promise<void> {

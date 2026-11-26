@@ -101,6 +101,12 @@ export class DataverseRepository implements CollectionsRepository {
     return parsed.success ? parsed.data : undefined;
   }
 
+  async latestDashboard(): Promise<DashboardSpec | undefined> {
+    const rows = await this.client.list(DASH.entitySet, `$select=${DASH.columns.specJson}&$orderby=modifiedon desc&$top=1`);
+    const parsed = DashboardSpec.safeParse(JSON.parse(str(rows[0] ?? {}, DASH.columns.specJson) || "null"));
+    return parsed.success ? parsed.data : undefined;
+  }
+
   async saveDashboard(spec: DashboardSpec): Promise<DashboardSpec> {
     const current = await this.getDashboard(spec.id);
     if (!isNewerSpec(spec, current)) return current!;

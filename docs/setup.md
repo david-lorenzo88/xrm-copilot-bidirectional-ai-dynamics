@@ -41,7 +41,7 @@ resource group tagged `project=xrm-copilot-collections`, and the app registratio
 | 4 | Dataverse | `deploy/dataverse.sh --dry-run`, then without `--dry-run` | Checks that `pac` is on `DATAVERSE_URL` (`pac org who`). Note: `pac pcf push` ends with *Publish All Customizations* for the whole environment. Reuses the `ppn` publisher (`PowerPlatformNinja` first), creates solution `CollectionsWorkspace` and pushes the PCF into it. It prints the publisher the app-builder App Spec must use. `--tables` is the fallback that creates the two `ppn_` tables with `create-tables.mjs` |
 | 5 | Azure + Entra | `deploy/azure.sh --dry-run`, then without `--dry-run` | Registers the resource providers. Creates the resource group, Log Analytics, the Container Apps environment, ACR (`az acr build` from a minimal git-tracked context; the full repository made ACR Tasks fail), the managed identity and the Container App. Also creates the app registration `xrm-copilot-collections-mcp` (`access_as_user`, Dataverse `user_impersonation`, federated credential, Teams SSO redirect URIs). Writes `deploy/outputs.env`. Admin consent is **not** granted: an admin runs the printed URL or command |
 | 4c | PCF (update) | `bash deploy/pcf-import.sh` | Builds a wrapper solution holding only the control, with the environment's own publisher block, and imports it without *Publish All*. Bump the control version first |
-| 4d | PCF on the form | `node deploy/bind-pcf.mjs` | Binds CollectionsBridge to the customer number on *Collections customer* (all form factors). gptId comes from the app's default-agent environment variable. Re-run after rebuilding the form with app-builder |
+| 4d | PCF on the form | `node deploy/bind-pcf.mjs` | Binds CollectionsBridge to the customer number on *Collections customer* (all form factors). gptId comes from the app's default-agent environment variable. `DEMO_AS_OF` and `CUSTOMER_NUMBER_PREFIX` from `tenant.env` become the control's *Demo date* and *Customer number prefix*, so the in-app dashboard uses the same date and scope as the MCP server. Re-run after rebuilding the form with app-builder |
 | 4b | Copilot for this app | `bash deploy/app-settings.sh` | App-level *Enable M365 Copilot in model-driven apps* = 1 for Collections Workspace only, then publishes that app only |
 | 6 | Agent | `node deploy/agent.mjs --dry-run`, then without | Device-code sign-in (works from a remote container, unlike the Agents Toolkit CLI's browser sign-in). Creates the Entra SSO registration in the Teams Developer Portal, adds its Application ID URI and the token-store pre-authorization to the app registration, makes the MCP server accept that audience, builds and imports the package, and uploads it to Microsoft 365. Tenant values go to the git-ignored `agent/env/.env.dev.local` |
 | 7 | Admin consent | `az ad app permission admin-consent --id <AZURE_CLIENT_ID>` (tenant admin) | Dataverse `user_impersonation` for the OBO exchange |
@@ -152,9 +152,26 @@ az containerapp create -g $RG -n $APP --environment $ENVNAME \
 
 ## 7. Copilot settings for the app
 
-1. Power Platform admin center → environment → **Features**: Microsoft 365 Copilot in model-driven apps **on**. Make sure **Dataverse search** is on.
-2. Power Apps → **Collections Workspace** → *Settings* → *Upcoming/Features*: Microsoft 365 Copilot chat **on** (app-level override).
-3. The user's licence and rollout flags: `Xrm.Copilot.isM365CopilotEnabled()` checks licence, environment setting, Dataverse indexing, app override and rollout, and **caches the answer for 30 minutes**. After changing settings, use a fresh browser session.
+All of these must be on, or `Xrm.Copilot.isM365CopilotEnabled()` returns `false`, there is no Copilot button in
+the app header and every `Xrm.Copilot` call does nothing.
+
+1. **Microsoft 365 admin center → Copilot → Settings → "Business Applications data in Work IQ available to
+   Copilot"** (older name: *Dataverse data available in Microsoft Copilot*) → **All users** or a group with the demo
+   users. Needs AI administrator or Global administrator. In the demo tenant this was **None** and was the missing
+   switch: the app showed no Copilot button and `isM365CopilotEnabled()` returned `false` with everything else on.
+2. **Power Platform admin center → Copilot → Settings → Power Apps → Chat agent → Microsoft Copilot** → **On** for
+   the environment.
+3. **Power Platform admin center → Environments → *env* → Settings → Product → Features**: *Copilot* ("Allow users to
+   analyze data using an AI-powered chat experience…") **On**; *Dataverse intelligence* ("Allow data availability in
+   Microsoft 365 Copilot") **On**; *Dataverse search* **On**.
+4. **App**: Power Apps → **Collections Workspace** → *Settings* → *Features* → *Microsoft Copilot in model-driven
+   apps* **On**, save and **publish** (stored as app setting `m365copilotmodelappenabled` = 2; `deploy/app-settings.sh`
+   does it by script). The environment-wide alternative is the same setting's environment value `2` in the Default
+   Solution, which turns it on for every model-driven app in the environment.
+5. **Licence**: Microsoft 365 Copilot plus Power Apps premium (or Dynamics 365 Enterprise/Premium for Dynamics 365 apps).
+6. **Check**: `await Xrm.Copilot.isM365CopilotEnabled()` in the browser console on any app page. It checks a kill
+   switch, licence, environment setting, Dataverse indexing, the app override and a gradual-rollout flag, and **caches
+   the answer for 30 minutes**: after changing a setting, test in a new InPrivate window.
 
 ## 8. Set the default agent
 

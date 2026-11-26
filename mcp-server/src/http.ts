@@ -53,11 +53,15 @@ export function createApp({ config, widgets, widgetStatus }: AppOptions) {
   });
 
   app.post("/mcp", async (req: Request, res: Response) => {
+    const started = Date.now();
+    const what = describeRpc(req.body);
+    res.on("finish", () => console.log(`[mcp] ${res.statusCode} ${what} ${Date.now() - started}ms`));
     let caller: Caller | undefined;
     if (validate) {
       try {
         caller = await validate(req.headers.authorization);
       } catch (err) {
+        console.warn(`[mcp] auth rejected: ${(err as AuthError).message}`);
         res.setHeader("WWW-Authenticate", `Bearer resource_metadata="${resourceMetadataUrl}"`);
         return void res.status(401).json({ jsonrpc: "2.0", error: { code: -32001, message: (err as AuthError).message }, id: null });
       }
@@ -84,6 +88,22 @@ export function createApp({ config, widgets, widgetStatus }: AppOptions) {
   app.delete("/mcp", methodNotAllowed);
 
   return app;
+}
+
+/**
+ * One log line per JSON-RPC message: method, tool name and argument names (values only for
+ * customerNo/invoiceNo/dashboardId, which identify demo records). Never headers or tokens.
+ */
+export function describeRpc(body: unknown): string {
+  const one = (m: unknown): string => {
+    if (!m || typeof m !== "object") return "?";
+    const { method, params } = m as { method?: string; params?: { name?: string; arguments?: Record<string, unknown> } };
+    if (method !== "tools/call") return method ?? "?";
+    const args = params?.arguments ?? {};
+    const shown = Object.entries(args).map(([k, v]) => (["customerNo", "invoiceNo", "dashboardId"].includes(k) ? `${k}=${String(v)}` : k));
+    return `tools/call ${params?.name ?? "?"}(${shown.join(",")})`;
+  };
+  return Array.isArray(body) ? body.map(one).join(" + ") : one(body);
 }
 
 /** Small CORS middleware for the MCP Inspector / mock host. Copilot calls server-to-server. */

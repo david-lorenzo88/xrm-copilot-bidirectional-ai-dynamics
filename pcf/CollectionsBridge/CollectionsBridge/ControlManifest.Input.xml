@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="Contoso" constructor="CollectionsBridge" version="1.0.2"
+  <control namespace="Contoso" constructor="CollectionsBridge" version="1.0.11"
            display-name-key="CollectionsBridge_Display_Key" description-key="CollectionsBridge_Desc_Key"
            control-type="virtual">
     <external-service-usage enabled="false"></external-service-usage>
@@ -20,6 +20,10 @@
               of-type="SingleLine.Text" usage="input" required="false" />
 
     <property name="asOfDate" display-name-key="asOfDate_Display_Key" description-key="asOfDate_Desc_Key"
+              of-type="SingleLine.Text" usage="input" required="false" />
+    <property name="showContextSwitch" display-name-key="showContextSwitch_Display_Key" description-key="showContextSwitch_Desc_Key"
+              of-type="TwoOptions" usage="input" required="false" />
+    <property name="customerNumberPrefix" display-name-key="customerNumberPrefix_Display_Key" description-key="customerNumberPrefix_Desc_Key"
               of-type="SingleLine.Text" usage="input" required="false" />
     <resources>
       <code path="index.ts" order="1" />

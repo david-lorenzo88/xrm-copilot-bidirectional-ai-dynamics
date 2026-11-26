@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { loadConfig } from "../src/config";
-import { createApp } from "../src/http";
+import { createApp, describeRpc } from "../src/http";
 import { stubWidgets } from "./helpers";
 
 let server: Server;
@@ -28,7 +28,7 @@ describe("HTTP transport", () => {
     const client = new Client({ name: "http-test", version: "1.0.0" });
     await client.connect(new StreamableHTTPClientTransport(new URL(`${base}/mcp`)));
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(7);
+    expect(tools).toHaveLength(8);
     const r = await client.callTool({ name: "prioritize_collections", arguments: { customerNo: "C-1001", limit: 3 } });
     expect((r.structuredContent as { items: unknown[] }).items).toHaveLength(3);
     await client.close();
@@ -70,5 +70,17 @@ describe("config", () => {
     const meta = await (await fetch(`${url}/.well-known/oauth-protected-resource`)).json();
     expect(meta.authorization_servers[0]).toContain("contoso-tenant");
     await new Promise<void>((r) => s.close(() => r()));
+  });
+});
+
+describe("describeRpc (request log line)", () => {
+  it("names the tool and shows only identifying argument values", () => {
+    expect(describeRpc({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "get_customer_context", arguments: { customerNo: "DEMO-C-1001", note: "secret" } } })).toBe(
+      "tools/call get_customer_context(customerNo=DEMO-C-1001,note)",
+    );
+  });
+  it("handles other methods, batches and junk", () => {
+    expect(describeRpc([{ method: "initialize" }, { method: "tools/list" }])).toBe("initialize + tools/list");
+    expect(describeRpc(undefined)).toBe("?");
   });
 });

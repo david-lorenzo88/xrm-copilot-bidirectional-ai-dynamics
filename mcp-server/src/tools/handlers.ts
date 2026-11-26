@@ -108,7 +108,7 @@ export async function prioritize(
         ? { contractVersion: CONTRACT_VERSION, invoiceIds: critical.map((i) => i.invoiceId), invoiceNumbers: critical.map((i) => i.invoiceNo) }
         : null,
       showWorklist: items.length
-        ? { contractVersion: CONTRACT_VERSION, title, fetchXml: buildPrioritizedWorklistFetchXml(items.map((i) => i.invoiceId)), invoiceIds: items.map((i) => i.invoiceId) }
+        ? { contractVersion: CONTRACT_VERSION, title, fetchXml: buildPrioritizedWorklistFetchXml(items.map((i) => i.invoiceId)), invoiceIds: items.map((i) => i.invoiceId), suggestedActions: items.map((i) => i.suggestedAction) }
         : null,
     },
     autoApply: args.applyInApp ?? true,
@@ -136,6 +136,20 @@ export async function proposeFollowUp(
   return { kind: "followUpProposal", customer: { number: customer.number, name: customer.name }, payload, actionId: ActionIds.LogFollowUp };
 }
 
+/**
+ * Proposes a research note (context from web search: sector, country, regulation). Same path as a
+ * follow-up: writes nothing; the widget hands it to the app, which confirms and stores it.
+ */
+export async function proposeResearchNote(
+  repo: CollectionsRepository,
+  args: { customerNo: string; summary: string; sources?: { title: string; url: string }[] },
+): Promise<FollowUpProposal> {
+  const customer = await requireCustomer(repo, { customerNo: args.customerNo });
+  const payload: LogFollowUpPayload = { contractVersion: CONTRACT_VERSION, customerNo: customer.number, note: args.summary, kind: "research" };
+  if (args.sources?.length) payload.sources = args.sources;
+  return { kind: "followUpProposal", customer: { number: customer.number, name: customer.name }, payload, actionId: ActionIds.LogFollowUp };
+}
+
 export interface DashboardResult {
   spec: DashboardSpec;
   data: DashboardData;
@@ -159,9 +173,10 @@ export async function buildDashboard(repo: CollectionsRepository, { dashboardId,
   return withData(repo, await repo.saveDashboard(spec));
 }
 
-export async function getDashboard(repo: CollectionsRepository, dashboardId: string): Promise<DashboardResult> {
-  const spec = await repo.getDashboard(dashboardId);
-  if (!spec) throw new NotFoundError(`Dashboard not found: ${dashboardId}`);
+/** Without an id: the most recently changed dashboard (the agent rarely gets the app's dashboardId). */
+export async function getDashboard(repo: CollectionsRepository, dashboardId?: string): Promise<DashboardResult> {
+  const spec = dashboardId ? await repo.getDashboard(dashboardId) : await repo.latestDashboard();
+  if (!spec) throw new NotFoundError(dashboardId ? `Dashboard not found: ${dashboardId}` : "No dashboard yet: build one with build_aging_dashboard");
   return withData(repo, spec);
 }
 

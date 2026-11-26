@@ -167,8 +167,51 @@ flowchart LR
     licensing and checklist slides (31 slides, Open XML SDK validation clean). The recap slides keep the mock-host
     screenshots until the end-to-end run in the tenant.
 
+### 13. Merge and docs from the live tenant
+31. Merged the build into `main` (pull request #1). The CI job never started in this repository (GitHub Actions
+    account/billing block), so the 107 tests were run locally.
+32. Rewrote [demo-script.md](demo-script.md) with the real clicks, prompts and the numbers the tenant shows on the
+    session date, and [production-readiness.md](production-readiness.md) with what the build taught us: per-app Copilot
+    setting and default-agent variable, BC virtual table limits, SSO and secret-less OBO, PCF update and re-bind
+    steps, app-builder caveats, BC seeding gaps and the VERIFY points still open.
+
+### 14. End-to-end run in the tenant (14–15 Nov)
+33. Copilot didn't appear in the app: `isM365CopilotEnabled()` returned `false` with the app, environment and licence
+    settings on. The missing switch was tenant level: Microsoft 365 admin center → Copilot → Settings → *Business
+    Applications data in Work IQ available to Copilot* was **None**.
+34. Added a one-line request log to the MCP server. It showed the agent never called its tools from the app pane: it
+    answered from Work IQ, and the app's `updateContext` payload doesn't reach an authored agent (risk #1, confirmed).
+    The same prompt in Microsoft 365 Copilot did call the tools (silent SSO, OBO, live BC data).
+35. Made tool use reliable: the app's prompt names the customer and the tools, plus `discourage_model_knowledge`, a
+    plugin `description_for_model` and step-by-step instructions. Beat 2 then ran 3/3: three tool calls, the widget in
+    the app's pane, the chase-today list in the control, side panes for the critical invoices.
+36. Fixes from watching it live: badges that wrapped, the same next step in widget and app, a *Collections invoice*
+    form for the side panes (app-builder; the generated one-field form removed from the app), side panes on click
+    instead of automatically, BC fields read-only on the app's forms.
+37. Beat 3: the in-app dashboard included CRONUS ES's own customers (€785k vs €125k); the control now gets the server's
+    customer scope. Widget → app sync worked; app → agent didn't until `get_dashboard` could return the latest dashboard
+    without an id and the app got an **Ask Copilot** button. Typed questions then worked too.
+38. Added a **Build aging dashboard** button (no typing on stage) and fixed the dashboard table's clipped totals.
+    PCF 1.0.9, agent 1.0.4, 113 tests.
+
+### 15. Deck v4
+39. Recap slides with screenshots from the tenant run, recap texts and the shared-state slide matching the confirmed
+    behaviour, and a new *Sharp edges: the Copilot pane* slide (32 slides, Open XML SDK validation clean).
+### 16. Before/after switch (26 Nov)
+40. A demo-only **Share context with Copilot** switch on the control (`SHOW_CONTEXT_SWITCH=true` in `tenant.env`). Off: the
+    app withdraws its context and Analyze asks about "this customer", so the agent asks which one (the instructions forbid
+    guessing from Work IQ). On: the normal grounded prompt. PCF 1.0.10, agent 1.0.5, 114 tests.
+41. Testing the switch showed the pane passes the **open record** to the agent anyway: with the app's context withdrawn,
+    it called `get_customer_context` with the record id. Only our own `updateContext` keys don't arrive. The switch was
+    taken off the demo form (`SHOW_CONTEXT_SWITCH=false`; the code stays), Beat 1 now starts outside the app in Microsoft
+    365 Copilot, and the agent uses the open record when the prompt names no customer. Agent 1.0.6.
+42. **Research online**: the agent gets Microsoft's web search capability and researches the payment climate around the
+    customer (country, sector, regulation, never the fictional company). A new `propose_research_note` tool puts a summary
+    and sources on a card; the app confirms and saves it, and a **Notes** list on the form shows it. PCF 1.0.11, agent
+    1.0.7, 116 tests.
+
 ## Still open
 
-- End-to-end run of the three beats in the real app and Copilot pane; real screenshots for the deck.
-- Confirm in the tenant: whether `updateContext` reaches the declarative agent (the prompt carries the context too)
-  and that widget actions reach the app's handlers.
+- A timed rehearsal and a fallback recording; cleaner full-width screenshots for the recap slides if wanted.
+- *Research online* ran in the tenant (26 Nov); the follow-up proposal uses the same path but wasn't run itself.
+- The week of the session: re-verify the GA/preview map. After it: set `DEMO_AS_OF` empty and redeploy.

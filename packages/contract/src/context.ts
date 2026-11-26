@@ -60,11 +60,26 @@ export function summarizeContext(context: CollectionsContext): string {
   return parts.join(" · ");
 }
 
+/** "Fabrikam, Inc. (DEMO-C-1001)", or whichever of the two is known. */
+export function customerLabel(context: CollectionsContext | undefined): string | undefined {
+  if (!context?.customerNo && !context?.customerName) return undefined;
+  if (context.customerNo && context.customerName) return `${context.customerName} (${context.customerNo})`;
+  return context.customerName ?? context.customerNo;
+}
+
 /**
- * Fallback for risk #1 (PLAN §7): put the context inside the prompt itself, so
- * the agent is grounded even if updateContext does not reach it.
+ * Fallback for risk #1 (PLAN §7), confirmed in the tenant: authored agents don't receive the
+ * updateContext payload, so the context travels inside the prompt, which the pane shows as the
+ * user's message. A prompt with a `{customer}` placeholder gets the customer named in plain words
+ * ("…of Fabrikam, Inc. (DEMO-C-1001)…"); a dashboard, if open, is added as a short sentence. Any
+ * other prompt gets the `[App context]` line appended.
  */
 export function buildGroundedPrompt(prompt: string, context: CollectionsContext | undefined): string {
+  const label = customerLabel(context);
+  if (prompt.includes("{customer}")) {
+    const text = prompt.split("{customer}").join(label ?? "this customer");
+    return context?.dashboardId ? `${text} The open dashboard is ${context.dashboardId} (v${context.dashboardVersion ?? 1}).` : text;
+  }
   if (!context) return prompt;
   return `${prompt}\n\n[App context] ${summarizeContext(context)}`;
 }

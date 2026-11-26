@@ -56,11 +56,11 @@ export class ScriptedAgent {
     this.post({ id: msgId(), role: "agent", text });
   }
 
-  /** Customer from updateContext, or from the [App context] line embedded in the prompt (fallback). */
+  /** Customer from updateContext, or from the prompt: "[App context] Customer C-1001 …" or "… Fabrikam, Inc. (C-1001) …". */
   private customerNo(prompt: string): string | undefined {
     const ctx = this.context();
     if (typeof ctx?.customerNo === "string") return ctx.customerNo;
-    return /\[App context\] Customer (\S+)/.exec(prompt)?.[1];
+    return /\[App context\] Customer (\S+)/.exec(prompt)?.[1] ?? /\(([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\)/.exec(prompt)?.[1];
   }
 
   greet(ctx: PowerAppsContent): void {

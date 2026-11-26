@@ -21,6 +21,7 @@ const useStyles = makeStyles({
   root: { display: "flex", flexDirection: "column", gap: tokens.spacingVerticalM, padding: tokens.spacingVerticalM, fontFamily: tokens.fontFamilyBase },
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: tokens.spacingHorizontalM, flexWrap: "wrap" },
   actions: { display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" },
+  nowrap: { whiteSpace: "nowrap" },
   cards: { display: "flex", gap: tokens.spacingHorizontalM, flexWrap: "wrap" },
   num: { textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" },
   muted: { color: tokens.colorNeutralForeground3 },
@@ -99,13 +100,13 @@ export function PriorityList({ items, title = "Chase today", subtitle, onOpenCri
                   <TableCell>{i.invoiceNo}</TableCell>
                   <TableCell>{i.customerName}</TableCell>
                   <TableCell className={styles.num}>
-                    <Badge appearance="tint" color={overdueBadgeColor(i.daysOverdue)}>
+                    <Badge className={styles.nowrap} appearance="tint" color={overdueBadgeColor(i.daysOverdue)}>
                       {i.daysOverdue} d
                     </Badge>
                   </TableCell>
                   <TableCell className={styles.num}>{formatMoney(i.remainingAmount, i.currency)}</TableCell>
                   <TableCell>
-                    <Badge appearance="outline" color={actionColor[i.suggestedAction]} title={i.reasons.join(" · ")}>
+                    <Badge className={styles.nowrap} appearance="outline" color={actionColor[i.suggestedAction]} title={i.reasons.join(" · ")}>
                       {i.suggestedAction}
                     </Badge>
                   </TableCell>

@@ -6,9 +6,12 @@ import type { FollowUpProposal, PrioritizeResult } from "../../src/tools/handler
 import { callTool, postAppAction, useToolResult } from "./host";
 import { ToolError, Waiting, mount } from "./WidgetShell";
 
-/** Sends the ready-made app actions from the tool result (navigation only; nothing is written). */
+/**
+ * On render, only the chase-today list goes to the app (it sits inside the control). Side panes
+ * cover the page, so they open when the user clicks "Open N critical invoices" (feedback from the
+ * live run: auto-opened panes before the answer was read felt intrusive). Navigation only.
+ */
 function applyInApp({ actions }: PrioritizeResult): void {
-  if (actions.openInvoices) postAppAction(ActionIds.OpenInvoices, actions.openInvoices);
   if (actions.showWorklist) postAppAction(ActionIds.ShowWorklist, actions.showWorklist);
 }
 
@@ -16,13 +19,27 @@ function applyInApp({ actions }: PrioritizeResult): void {
 function FollowUpCard({ proposal }: { proposal: FollowUpProposal }) {
   const [sent, setSent] = React.useState(false);
   const { payload, customer } = proposal;
+  const research = payload.kind === "research";
   return (
     <Card style={{ margin: 12 }}>
-      <Text weight="semibold">Log this follow-up?</Text>
+      <Text weight="semibold">{research ? "Insert this research into the record?" : "Log this follow-up?"}</Text>
       <Caption1>
         {customer.name} ({customer.number})
       </Caption1>
-      <Text>{payload.note}</Text>
+      <Text style={{ whiteSpace: "pre-wrap" }}>{payload.note}</Text>
+      {payload.sources?.length ? (
+        <Caption1>
+          Sources:{" "}
+          {payload.sources.map((s, i) => (
+            <React.Fragment key={s.url}>
+              {i > 0 && " · "}
+              <a href={s.url} target="_blank" rel="noreferrer">
+                {s.title}
+              </a>
+            </React.Fragment>
+          ))}
+        </Caption1>
+      ) : null}
       {payload.promiseDate && <Caption1>Promise to pay by {payload.promiseDate}</Caption1>}
       <div>
         <Button
@@ -33,7 +50,7 @@ function FollowUpCard({ proposal }: { proposal: FollowUpProposal }) {
             setSent(true);
           }}
         >
-          {sent ? "Sent to the app: confirm there" : "Log in app"}
+          {sent ? "Sent to the app: confirm there" : research ? "Insert into record" : "Log in app"}
         </Button>
       </div>
     </Card>

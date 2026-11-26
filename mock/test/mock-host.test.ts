@@ -103,6 +103,12 @@ describe("ScriptedAgent against the real MCP server (in-memory)", () => {
     expect((messages.at(-1) as { text: string }).text).toMatch(/getting worse/);
   });
 
+  it("reads the customer named in the prompt (\"… Fabrikam, Inc. (C-1002) …\")", async () => {
+    const { ag, messages } = await agent(undefined);
+    await ag.handle("Analyze the payment behavior of Northwind Traders (C-1002) and prioritize what to chase today.");
+    expect(messages.some((m) => m.role === "tool" && JSON.stringify(m.args).includes("C-1002"))).toBe(true);
+  });
+
   it("falls back to the [App context] line when updateContext did not arrive", async () => {
     const { ag, messages } = await agent(undefined);
     await ag.handle("Analyze this customer\n\n[App context] Customer C-1002 Northwind Traders · view Overdue invoices");
