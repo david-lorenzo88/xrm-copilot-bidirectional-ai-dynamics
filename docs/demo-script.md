@@ -106,7 +106,7 @@ answers about the old version, click **Ask Copilot** in the app (the prompt name
 
 ## Bonus (if time): research online, then insert into the record (2 min)
 
-Optional: rehearse it first; skip it if web search misbehaves.
+Run in the tenant on 26 Nov: the note appeared on the form with its sources. Skip it if web search misbehaves on the day.
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|

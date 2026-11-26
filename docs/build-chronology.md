@@ -213,5 +213,5 @@ flowchart LR
 ## Still open
 
 - A timed rehearsal and a fallback recording; cleaner full-width screenshots for the recap slides if wanted.
-- The bonus beat (propose a follow-up, confirm in the app) has not been run in the tenant.
+- *Research online* ran in the tenant (26 Nov); the follow-up proposal uses the same path but wasn't run itself.
 - The week of the session: re-verify the GA/preview map. After it: set `DEMO_AS_OF` empty and redeploy.

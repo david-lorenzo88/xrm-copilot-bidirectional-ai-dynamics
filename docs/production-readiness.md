@@ -122,4 +122,4 @@ Still open (code comments `// VERIFY:`):
 | `pcf/…/ControlManifest.Input.xml` | Platform library versions served by the environment |
 | `agent/m365agents.yml` | Toolkit schema versions (the deploy path uses `deploy/agent.mjs` instead) |
 | `dataverse/tables/ppn_collectiondashboard.json` | Native → virtual table lookup support for `ppn_customer`; the code keys on `ppn_customerno`, so the demo doesn't depend on it |
-| Bonus beat | `propose_follow_up` → *Log in app* → confirm dialog has not been run in the tenant yet |
+| Bonus 2 | `propose_follow_up` itself not run in the tenant; its path (card → `LogFollowUp` → confirm dialog → `ppn_collectionaction` → Notes on the form) was, through *Research online* on 26 Nov |
