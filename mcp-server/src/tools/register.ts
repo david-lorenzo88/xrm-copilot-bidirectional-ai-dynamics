@@ -6,7 +6,7 @@ import { BLOCKED_VALUES, DashboardDimension, DashboardFilters, DashboardMeasure,
 import type { CollectionsRepository } from "../repository/types";
 import { WIDGETS } from "../widgets";
 import * as h from "./handlers";
-import { summarizeBehavior, summarizeContext, summarizeCustomerUpdate, summarizeDashboard, summarizeFollowUp, summarizeWorklist } from "./summaries";
+import { summarizeBehavior, summarizeContext, summarizeCustomerUpdate, summarizeDashboard, summarizeFollowUp, summarizeNewCustomer, summarizeWorklist } from "./summaries";
 
 const customerNo = z.string().min(1).max(100).describe("Business Central customer number (e.g. C-1001) or the start of the customer name");
 const groupBy = z.tuple([DashboardDimension, DashboardDimension]).describe('[rows, columns], default ["customer","agingBucket"]');
@@ -81,6 +81,34 @@ export function registerTools(server: McpServer, repo: CollectionsRepository): v
       _meta: { ui: { resourceUri: WIDGETS.priorityList.uri } },
     },
     (args) => respond(() => h.proposeFollowUp(repo, args), summarizeFollowUp),
+  );
+
+  registerAppTool(
+    server,
+    "propose_new_customer",
+    {
+      title: "Propose new customer",
+      description:
+        "Proposes creating a new Business Central customer from data the user supplied: pasted text, an email you found in their mailbox, or an attached document. Only use values that appear in that source; leave the rest out. Checks for an existing customer with the same name and picks the next free number. Writes nothing: it renders a card that opens a pre-filled new customer form; the user reviews and saves, which creates the customer in Business Central.",
+      inputSchema: {
+        name: z.string().min(1).max(100),
+        number: z.string().regex(/^[A-Z0-9-]{1,20}$/).optional().describe("Leave out to use the next free number"),
+        addressLine1: z.string().max(100).optional(),
+        city: z.string().max(30).optional(),
+        postalCode: z.string().max(20).optional(),
+        country: z.string().max(10).optional().describe("Country/region code, e.g. PT, ES"),
+        phoneNumber: z.string().max(30).optional(),
+        email: z.string().email().max(80).optional(),
+        website: z.string().max(80).optional(),
+        taxRegistrationNumber: z.string().max(20).optional().describe("VAT / NIF / CIF number"),
+        currencyCode: z.string().max(10).optional().describe("Leave empty for the company's local currency"),
+        creditLimit: z.number().min(0).max(1_000_000_000).optional(),
+        source: z.string().min(1).max(300).describe('Where the data came from, e.g. "Email from Rita Sousa, 26 Nov"'),
+      },
+      annotations: { readOnlyHint: true },
+      _meta: { ui: { resourceUri: WIDGETS.priorityList.uri } },
+    },
+    (args) => respond(() => h.proposeNewCustomer(repo, args), summarizeNewCustomer),
   );
 
   registerAppTool(

@@ -153,6 +153,95 @@
       }
     },
     {
+      "name": "propose_new_customer",
+      "title": "Propose new customer",
+      "description": "Proposes creating a new Business Central customer from data the user supplied: pasted text, an email you found in their mailbox, or an attached document. Only use values that appear in that source; leave the rest out. Checks for an existing customer with the same name and picks the next free number. Writes nothing: it renders a card that opens a pre-filled new customer form; the user reviews and saves, which creates the customer in Business Central.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "number": {
+            "description": "Leave out to use the next free number",
+            "type": "string",
+            "pattern": "^[A-Z0-9-]{1,20}$"
+          },
+          "addressLine1": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "postalCode": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "country": {
+            "description": "Country/region code, e.g. PT, ES",
+            "type": "string",
+            "maxLength": 10
+          },
+          "phoneNumber": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 80,
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "website": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "taxRegistrationNumber": {
+            "description": "VAT / NIF / CIF number",
+            "type": "string",
+            "maxLength": 20
+          },
+          "currencyCode": {
+            "description": "Leave empty for the company's local currency",
+            "type": "string",
+            "maxLength": 10
+          },
+          "creditLimit": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "Where the data came from, e.g. \"Email from Rita Sousa, 26 Nov\""
+          }
+        },
+        "required": [
+          "name",
+          "source"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://collections/priority-list"
+        },
+        "ui/resourceUri": "ui://collections/priority-list"
+      }
+    },
+    {
       "name": "propose_customer_update",
       "title": "Propose customer update",
       "description": "Proposes changing the open customer's credit limit and/or Blocked status in Business Central (for example after a worsening risk analysis). Writes nothing: it renders a card that fills the change into the open form; the user reviews and saves, and saving writes to Business Central through the virtual table. Only these two fields can be changed.",

@@ -10,7 +10,8 @@
     "aiDescription": "For finance collections specialists. Covers Business Central customers and posted sales invoices (read live through virtual tables), overdue worklists, aging dashboards shared with the Collections agent, and confirmed follow-ups. Excludes sales, purchasing and anything that writes to Business Central.",
     "mainForms": {
       "dyn365bc_customer_v2_0": [
-        "Collections customer"
+        "Collections customer",
+        "New customer"
       ],
       "dyn365bc_salesinvoice_v2_0": [
         "Collections invoice"
@@ -355,6 +356,54 @@
           "readOnly": true
         }
       }
+    },
+    {
+      "entity": "dyn365bc_customer_v2_0",
+      "type": "main",
+      "name": "New customer",
+      "description": "Create a Business Central customer, usually pre-filled by Copilot from an email or document; saving creates it in BC through the virtual table.",
+      "tabs": [
+        {
+          "name": "tab_new",
+          "label": "New customer",
+          "sections": [
+            {
+              "name": "sec_identity",
+              "label": "Customer",
+              "columns": 2,
+              "fields": [
+                "dyn365bc_displayname",
+                "dyn365bc_number",
+                "dyn365bc_companylookup_id",
+                "dyn365bc_taxregistrationnumber",
+                "dyn365bc_currencycode",
+                "dyn365bc_creditlimit"
+              ]
+            },
+            {
+              "name": "sec_address",
+              "label": "Address",
+              "columns": 2,
+              "fields": [
+                "dyn365bc_addressline1",
+                "dyn365bc_postalcode",
+                "dyn365bc_city",
+                "dyn365bc_country"
+              ]
+            },
+            {
+              "name": "sec_contact",
+              "label": "Contact",
+              "columns": 2,
+              "fields": [
+                "dyn365bc_phonenumber",
+                "dyn365bc_email",
+                "dyn365bc_website"
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "entity": "dyn365bc_salesinvoice_v2_0",

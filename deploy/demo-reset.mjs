@@ -6,8 +6,9 @@
  *
  * Always: Fabrikam (DEMO-C-1001) back to credit limit 60,000 and not blocked. This writes through the
  * Business Central virtual table, so it changes the BC customer (the demo customer this repo created).
- * --all: also deletes this demo's dashboards (ppn_collectiondashboard) and the follow-up / research notes
- * and audit rows for DEMO-C-* customers (ppn_collectionaction). Nothing else in BC or Dataverse is touched.
+ * --all: also deletes this demo's dashboards (ppn_collectiondashboard), the follow-up / research notes and
+ * audit rows for DEMO-C-* customers (ppn_collectionaction), and customers created in rehearsals (DEMO-C-
+ * numbers above the 25 seeded ones, deleted in BC). Nothing else in BC or Dataverse is touched.
  * Requires `az` signed in to the tenant (Dataverse token).
  */
 import { execFileSync } from "node:child_process";
@@ -23,6 +24,7 @@ const env = Object.fromEntries(
 );
 const ORG = (env.DATAVERSE_URL ?? "").replace(/\/$/, "");
 const PREFIX = env.CUSTOMER_NUMBER_PREFIX || "DEMO-C-";
+const SEEDED_MAX = 1025; // deploy/bc-seed.mjs created DEMO-C-1001 … DEMO-C-1025
 const HERO = { number: "DEMO-C-1001", creditLimit: 60000, blocked: 200000000 }; // 200000000 = not blocked
 const token = execFileSync("az", ["account", "get-access-token", "--resource", ORG, "--query", "accessToken", "-o", "tsv"], { encoding: "utf8" }).trim();
 const q = (s) => encodeURIComponent(s);
@@ -54,4 +56,8 @@ if (ALL) {
   const actions = (await api("GET", `ppn_collectionactions?$select=ppn_collectionactionid&$filter=${q(`startswith(ppn_customerno,'${PREFIX}') or ppn_customerno eq null`)}`)).value;
   for (const a of actions) await api("DELETE", `ppn_collectionactions(${a.ppn_collectionactionid})`);
   console.log(` ok ${actions.length} note/audit row(s) ${DRY ? "would be " : ""}deleted`);
+  const created = (await api("GET", `dyn365bc_customers_v2_0?$select=dyn365bc_customer_v2_0id,dyn365bc_number,dyn365bc_displayname&$filter=${q(`startswith(dyn365bc_number,'${PREFIX}')`)}`)).value
+    .filter((x) => Number(x.dyn365bc_number.slice(PREFIX.length)) > SEEDED_MAX);
+  for (const x of created) await api("DELETE", `dyn365bc_customers_v2_0(${x.dyn365bc_customer_v2_0id})`);
+  console.log(` ok ${created.length} rehearsal customer(s) ${DRY ? "would be " : ""}deleted in BC${created.length ? `: ${created.map((x) => `${x.dyn365bc_number} ${x.dyn365bc_displayname}`).join(", ")}` : ""}`);
 }

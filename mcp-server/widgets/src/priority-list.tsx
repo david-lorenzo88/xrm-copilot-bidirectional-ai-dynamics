@@ -2,7 +2,7 @@ import * as React from "react";
 import { Button, Caption1, Card, Text } from "@fluentui/react-components";
 import { ActionIds } from "@collections/contract";
 import { PriorityList } from "@collections/ui";
-import type { CustomerUpdateProposal, FollowUpProposal, PrioritizeResult } from "../../src/tools/handlers";
+import type { CustomerUpdateProposal, FollowUpProposal, NewCustomerProposal, PrioritizeResult } from "../../src/tools/handlers";
 import { callTool, postAppAction, useToolResult } from "./host";
 import { ToolError, Waiting, mount } from "./WidgetShell";
 
@@ -93,8 +93,46 @@ function CustomerUpdateCard({ proposal }: { proposal: CustomerUpdateProposal }) 
   );
 }
 
+const NEW_CUSTOMER_LABELS: [keyof NewCustomerProposal["payload"]["customer"], string][] = [
+  ["number", "No."], ["addressLine1", "Address"], ["postalCode", "Post code"], ["city", "City"], ["country", "Country"],
+  ["phoneNumber", "Phone"], ["email", "Email"], ["website", "Website"], ["taxRegistrationNumber", "VAT reg. no."],
+  ["currencyCode", "Currency"], ["creditLimit", "Credit limit"],
+];
+
+/** Not a write either: the app opens a pre-filled new customer form, and the user saves it. */
+function NewCustomerCard({ proposal }: { proposal: NewCustomerProposal }) {
+  const [sent, setSent] = React.useState(false);
+  const { payload } = proposal;
+  return (
+    <Card style={{ margin: 12 }}>
+      <Text weight="semibold">Create {payload.customer.name} in Business Central?</Text>
+      <Caption1>From: {payload.source}</Caption1>
+      <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", columnGap: 12, rowGap: 2 }}>
+        {NEW_CUSTOMER_LABELS.filter(([k]) => payload.customer[k] !== undefined && payload.customer[k] !== "").map(([k, label]) => (
+          <React.Fragment key={k}>
+            <Caption1>{label}</Caption1>
+            <Text>{String(payload.customer[k])}</Text>
+          </React.Fragment>
+        ))}
+      </div>
+      <div>
+        <Button
+          appearance="primary"
+          disabled={sent}
+          onClick={() => {
+            postAppAction(ActionIds.CreateCustomer, payload);
+            setSent(true);
+          }}
+        >
+          {sent ? "Opened in the app: review and Save there" : "Create on the form"}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 function PriorityListWidget() {
-  const [result, setResult, error] = useToolResult<PrioritizeResult | FollowUpProposal | CustomerUpdateProposal>();
+  const [result, setResult, error] = useToolResult<PrioritizeResult | FollowUpProposal | CustomerUpdateProposal | NewCustomerProposal>();
   const applied = React.useRef<string | undefined>(undefined);
   const worklist = result && !("kind" in result) ? result : undefined;
 
@@ -108,7 +146,10 @@ function PriorityListWidget() {
 
   if (error) return <ToolError message={error} />;
   if (!result) return <Waiting label="Prioritizing overdue invoices…" />;
-  if ("kind" in result) return result.kind === "customerUpdateProposal" ? <CustomerUpdateCard proposal={result} /> : <FollowUpCard proposal={result} />;
+  if ("kind" in result) {
+    if (result.kind === "newCustomerProposal") return <NewCustomerCard proposal={result} />;
+    return result.kind === "customerUpdateProposal" ? <CustomerUpdateCard proposal={result} /> : <FollowUpCard proposal={result} />;
+  }
 
   const refresh = async () => {
     const { result: r } = await callTool<PrioritizeResult>("prioritize_collections", { customerNo: result.scope.customerNo, applyInApp: false });

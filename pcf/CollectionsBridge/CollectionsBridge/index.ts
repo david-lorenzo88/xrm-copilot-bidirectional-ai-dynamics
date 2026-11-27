@@ -53,6 +53,7 @@ export class CollectionsBridge implements ComponentFramework.ReactControl<IInput
         analyzePrompt: p.analyzePrompt?.raw || DEFAULT_SETTINGS.analyzePrompt,
         worklistViewId: p.worklistViewId?.raw ?? undefined,
         showContextSwitch: p.showContextSwitch?.raw ?? false,
+        newCustomerFormId: p.newCustomerFormId?.raw || undefined,
       },
     });
   }

@@ -11,7 +11,8 @@
     { "title": "90+ drivers", "text": "Which customers drive the 90+ bucket, and what should I do about them?" }
   ],
   "capabilities": [
-    { "name": "WebSearch" }
+    { "name": "WebSearch" },
+    { "name": "Email" }
   ],
   "actions": [
     { "id": "collectionsMcp", "file": "ai-plugin.json" }
@@ -20,6 +21,6 @@
     "special_instructions": { "discourage_model_knowledge": true }
   },
   "disclaimer": {
-    "text": "Copilot never writes to Business Central itself: credit limit and Blocked changes are filled into the form and saved by you. Notes are stored only after you confirm them."
+    "text": "Copilot never writes to Business Central itself: new customers and credit limit or Blocked changes are filled into a form and saved by you. Notes are stored only after you confirm them."
   }
 }
