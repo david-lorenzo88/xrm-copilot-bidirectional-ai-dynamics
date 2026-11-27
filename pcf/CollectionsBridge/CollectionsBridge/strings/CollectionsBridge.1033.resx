@@ -66,6 +66,12 @@
   <data name="blocked_Desc_Key" xml:space="preserve">
     <value>Optional. The Blocked column; Copilot can propose a new status, which the control fills in without saving.</value>
   </data>
+  <data name="newCustomerFormId_Display_Key" xml:space="preserve">
+    <value>New customer form id</value>
+  </data>
+  <data name="newCustomerFormId_Desc_Key" xml:space="preserve">
+    <value>Optional. The main form opened, pre-filled, when Copilot proposes a new customer (editable fields).</value>
+  </data>
   <data name="showContextSwitch_Display_Key" xml:space="preserve">
     <value>Show context switch</value>
   </data>

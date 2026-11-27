@@ -1,3 +1,4 @@
+import { nextCustomerNumber } from "../src/tools/handlers";
 import { describe, expect, it } from "vitest";
 import { ActionIds, CUSTOM_ACTION_IDS, createActionGuard, type DashboardSpec } from "@collections/contract";
 import { WORKLIST_ENTITIES, type DashboardData, type PaymentBehavior } from "@collections/domain";
@@ -9,7 +10,7 @@ import { connect } from "./helpers";
 const guard = createActionGuard({ allowed: CUSTOM_ACTION_IDS, allowedEntities: WORKLIST_ENTITIES });
 
 describe("tool catalogue", () => {
-  it("lists the nine tools with readOnlyHint and widget links", async () => {
+  it("lists the ten tools with readOnlyHint and widget links", async () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
     const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
@@ -21,10 +22,11 @@ describe("tool catalogue", () => {
       "prioritize_collections",
       "propose_customer_update",
       "propose_follow_up",
+      "propose_new_customer",
       "propose_research_note",
       "update_dashboard",
     ]);
-    for (const name of ["get_customer_context", "analyze_payment_behavior", "prioritize_collections", "get_dashboard", "propose_follow_up", "propose_research_note", "propose_customer_update"]) {
+    for (const name of ["get_customer_context", "analyze_payment_behavior", "prioritize_collections", "get_dashboard", "propose_follow_up", "propose_research_note", "propose_customer_update", "propose_new_customer"]) {
       expect(byName[name]!.annotations?.readOnlyHint, name).toBe(true);
     }
     expect(byName.build_aging_dashboard!.annotations?.readOnlyHint).toBe(false);
@@ -146,6 +148,30 @@ describe("dashboard tools (shared state)", () => {
     expect(missing.isError).toBe(true);
     const missingUpdate = await call("update_dashboard", { dashboardId: "0f8fad5b-d9cb-469f-a165-70867728950e", patch: {} });
     expect(missingUpdate.isError).toBe(true);
+  });
+});
+
+describe("propose_new_customer", () => {
+  it("picks the next free number, refuses duplicates, and writes nothing", async () => {
+    const { call } = await connect();
+    const r = await call<{ kind: string; payload: { customer: { number: string; name: string; city?: string } }; actionId: string }>("propose_new_customer", {
+      name: "Bairro Alto Foods, Lda",
+      city: "Lisboa",
+      email: "rita@bairroalto.example",
+      source: "Email from Rita Sousa, 26 Nov",
+    });
+    expect(r.data).toMatchObject({ kind: "newCustomerProposal", actionId: "Contoso.Collections.CreateCustomer", payload: { customer: { name: "Bairro Alto Foods, Lda", city: "Lisboa" } } });
+    expect(r.data.payload.customer.number).toMatch(/^C-10\d\d$/);
+    expect(r.text).toMatch(/Nothing is created yet/);
+    expect((await call("propose_new_customer", { name: "Fabrikam, Inc.", source: "x" })).isError).toBe(true);
+    expect((await call("propose_new_customer", { name: "New Co", number: "C-1001", source: "x" })).isError).toBe(true);
+    expect((await call("propose_new_customer", { name: "New Co", email: "not-an-email", source: "x" })).isError).toBe(true);
+  });
+
+  it("nextCustomerNumber keeps prefix and width", () => {
+    expect(nextCustomerNumber(["DEMO-C-1001", "DEMO-C-1025", "DEMO-C-1003"])).toBe("DEMO-C-1026");
+    expect(nextCustomerNumber(["C-0099"])).toBe("C-0100");
+    expect(nextCustomerNumber([])).toBe("C-0001");
   });
 });
 

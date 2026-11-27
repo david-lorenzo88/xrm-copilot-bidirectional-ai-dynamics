@@ -1,6 +1,8 @@
 import {
   MAX_SIDE_PANES,
+  type CreateCustomerPayload,
   type DashboardSpec,
+  type NewCustomerFields,
   type LogFollowUpPayload,
   type OpenInvoicesPayload,
   type RenderDashboardPayload,
@@ -68,3 +70,46 @@ export async function confirmAndLogFollowUp(navigation: XrmNavigation, data: Col
   });
   return confirmed ? data.createFollowUp(p) : undefined;
 }
+
+const NEW_CUSTOMER_COLUMNS: Record<keyof NewCustomerFields, string> = {
+  number: "dyn365bc_number",
+  name: "dyn365bc_displayname",
+  addressLine1: "dyn365bc_addressline1",
+  city: "dyn365bc_city",
+  postalCode: "dyn365bc_postalcode",
+  country: "dyn365bc_country",
+  phoneNumber: "dyn365bc_phonenumber",
+  email: "dyn365bc_email",
+  website: "dyn365bc_website",
+  taxRegistrationNumber: "dyn365bc_taxregistrationnumber",
+  currencyCode: "dyn365bc_currencycode",
+  creditLimit: "dyn365bc_creditlimit",
+};
+
+/**
+ * Agent proposes, the user saves: opens a new customer form as a dialog over the current page, pre-filled
+ * from the proposal (and the open customer's company). Nothing is created until the user saves it, which
+ * creates the customer in Business Central through the virtual table. Returns whether it was saved.
+ */
+export async function openNewCustomerForm(
+  navigation: XrmNavigation,
+  p: CreateCustomerPayload,
+  options: { formId?: string; company?: { id: string; name: string } },
+): Promise<boolean> {
+  const data: Record<string, unknown> = {};
+  for (const [key, column] of Object.entries(NEW_CUSTOMER_COLUMNS) as [keyof NewCustomerFields, string][]) {
+    const value = p.customer[key];
+    if (value !== undefined && value !== "") data[column] = value;
+  }
+  if (options.company) {
+    data.dyn365bc_companylookup_id = options.company.id;
+    data.dyn365bc_companylookup_idname = options.company.name;
+    data.dyn365bc_companylookup_idtype = "cdm_company";
+  }
+  const result = (await navigation.navigateTo(
+    { pageType: "entityrecord", entityName: BC_TABLES.customer.logicalName, ...(options.formId ? { formId: options.formId } : {}), data },
+    { target: 2, position: 1, width: { value: 70, unit: "%" }, height: { value: 85, unit: "%" } },
+  )) as { savedEntityReference?: { id: string }[] } | undefined;
+  return !!result?.savedEntityReference?.length;
+}
+

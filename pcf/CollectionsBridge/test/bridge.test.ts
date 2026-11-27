@@ -233,6 +233,37 @@ describe("ApplyCustomerChanges: Copilot fills the form, the user saves", () => {
   });
 });
 
+describe("CreateCustomer: Copilot pre-fills a new customer form, the user saves", () => {
+  it("opens the New customer form as a dialog with the proposal and the open customer's company", async () => {
+    const { copilot, navigation, bridge } = setup();
+    bridge.settings.newCustomerFormId = "f0000000-0000-0000-0000-000000000001";
+    (vi.mocked(navigation.navigateTo) as unknown as { mockResolvedValueOnce(v: unknown): void }).mockResolvedValueOnce({ savedEntityReference: [{ id: "new-id" }] });
+    await bridge.setRecord({ customerNo: "C-1001" });
+    await copilot.dispatch(ActionIds.CreateCustomer, {
+      customer: { number: "C-1026", name: "Bairro Alto Foods, Lda", city: "Lisboa", email: "rita@bairroalto.example" },
+      source: "Email from Rita Sousa",
+    });
+    const [pageInput, options] = vi.mocked(navigation.navigateTo).mock.calls.at(-1) as unknown as [Record<string, unknown>, Record<string, unknown>];
+    expect(pageInput).toMatchObject({
+      pageType: "entityrecord",
+      entityName: "dyn365bc_customer_v2_0",
+      formId: "f0000000-0000-0000-0000-000000000001",
+      data: { dyn365bc_number: "C-1026", dyn365bc_displayname: "Bairro Alto Foods, Lda", dyn365bc_city: "Lisboa", dyn365bc_companylookup_idname: "CRONUS ES", dyn365bc_companylookup_idtype: "cdm_company" },
+    });
+    expect(options).toMatchObject({ target: 2 });
+    expect(bridge.store.get().notice?.text).toBe("Created Bairro Alto Foods, Lda (C-1026) in Business Central");
+  });
+
+  it("refuses fields outside the allow-list", async () => {
+    const { copilot, navigation, bridge } = setup();
+    await bridge.setRecord({ customerNo: "C-1001" });
+    const before = vi.mocked(navigation.navigateTo).mock.calls.length;
+    await copilot.dispatch(ActionIds.CreateCustomer, { customer: { number: "C-1026", name: "X", blocked: "All" }, source: "x" });
+    expect(vi.mocked(navigation.navigateTo).mock.calls.length).toBe(before);
+    expect(bridge.store.get().notice?.text).toMatch(/^Ignored/);
+  });
+});
+
 describe("lifecycle", () => {
   it("unregisters every handler on dispose", () => {
     const { bridge, handlers } = setup();

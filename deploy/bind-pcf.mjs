@@ -62,6 +62,10 @@ const form = forms.value[0];
 if (!form) die(`form '${FORM_NAME}' on ${ENTITY} not found (build the app with app-builder first)`);
 let xml = form.formxml;
 
+// The editable "New customer" form, opened pre-filled when Copilot proposes a new customer (optional).
+const newCustomerForm = (await api("GET", `systemforms?$select=formid&$filter=${q(`objecttypecode eq '${ENTITY}' and name eq 'New customer' and type eq 2`)}`)).value[0];
+if (newCustomerForm) ok(`New customer form ${newCustomerForm.formid}`);
+
 // 1. The cell control for the customer number: give it the custom-control class id and a uniqueid.
 const cellRe = new RegExp(`<control\\b[^>]*\\bdatafieldname="${FIELD}"[^>]*/>`);
 const cell = xml.match(cellRe)?.[0];
@@ -82,6 +86,7 @@ const params = [
   `<viewName static="true" type="SingleLine.Text">Overdue invoices</viewName>`,
   // Demo date from deploy/tenant.env (DEMO_AS_OF); empty = the real date.
   ...(env.DEMO_AS_OF ? [`<asOfDate static="true" type="SingleLine.Text">${env.DEMO_AS_OF}</asOfDate>`] : []),
+  ...(newCustomerForm ? [`<newCustomerFormId static="true" type="SingleLine.Text">${newCustomerForm.formid}</newCustomerFormId>`] : []),
   // Demo: the "Share context with Copilot" switch (SHOW_CONTEXT_SWITCH=true in tenant.env).
   ...(env.SHOW_CONTEXT_SWITCH === "true" ? [`<showContextSwitch static="true" type="TwoOptions">true</showContextSwitch>`] : []),
   // Same scope as the MCP server (CUSTOMER_NUMBER_PREFIX), so the in-app dashboard matches the widget.

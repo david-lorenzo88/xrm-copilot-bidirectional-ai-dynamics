@@ -1,7 +1,9 @@
 import {
   ActionIds,
   ApplyCustomerChangesPayload,
+  CreateCustomerPayload,
   type BlockedValue,
+  type NewCustomerFields,
   CONTRACT_VERSION,
   applyDashboardPatch,
   createDashboardSpec,
@@ -179,6 +181,42 @@ export async function proposeCustomerUpdate(
     payload,
     actionId: ActionIds.ApplyCustomerChanges,
   };
+}
+
+export interface NewCustomerProposal {
+  kind: "newCustomerProposal";
+  /** Sent to the app only when the user clicks "Create on the form"; the user then saves the form. */
+  payload: CreateCustomerPayload;
+  actionId: typeof ActionIds.CreateCustomer;
+}
+
+/** Next free number after the highest existing one with the same prefix (DEMO-C-1025 → DEMO-C-1026). */
+export function nextCustomerNumber(existing: readonly string[]): string {
+  let best: { prefix: string; n: number; width: number } | undefined;
+  for (const num of existing) {
+    const m = /^(.*?)(\d+)$/.exec(num);
+    if (m && (!best || Number(m[2]) > best.n)) best = { prefix: m[1]!, n: Number(m[2]), width: m[2]!.length };
+  }
+  return best ? `${best.prefix}${String(best.n + 1).padStart(best.width, "0")}` : "C-0001";
+}
+
+/**
+ * Proposes a new Business Central customer from data the user supplied (a pasted email, a found email,
+ * a document). Writes nothing: the widget hands it to the app, which opens a pre-filled form; saving it
+ * creates the customer in BC.
+ */
+export async function proposeNewCustomer(
+  repo: CollectionsRepository,
+  args: Omit<NewCustomerFields, "number"> & { number?: string; source: string },
+): Promise<NewCustomerProposal> {
+  const { source, number, ...fields } = args;
+  const customers = await repo.listCustomers();
+  const sameName = customers.find((c) => c.name.trim().toLowerCase() === fields.name.trim().toLowerCase());
+  if (sameName) throw new Error(`${sameName.name} already exists as ${sameName.number}; nothing to create.`);
+  const finalNumber = number ?? nextCustomerNumber(customers.map((c) => c.number));
+  if (customers.some((c) => c.number === finalNumber)) throw new Error(`Customer number ${finalNumber} is taken.`);
+  const payload = CreateCustomerPayload.parse({ contractVersion: CONTRACT_VERSION, customer: { number: finalNumber, ...fields }, source });
+  return { kind: "newCustomerProposal", payload, actionId: ActionIds.CreateCustomer };
 }
 
 export interface DashboardResult {

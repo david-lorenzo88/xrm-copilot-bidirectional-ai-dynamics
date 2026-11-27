@@ -9,6 +9,7 @@ export const ActionIds = {
   RenderDashboard: "Contoso.Collections.RenderDashboard",
   LogFollowUp: "Contoso.Collections.LogFollowUp",
   ApplyCustomerChanges: "Contoso.Collections.ApplyCustomerChanges",
+  CreateCustomer: "Contoso.Collections.CreateCustomer",
   OpenRecord: "MS.PA.CopilotChat.OpenRecord",
   NavigateToView: "MS.PA.CopilotChat.NavigateToView",
 } as const;
@@ -22,6 +23,7 @@ export const CUSTOM_ACTION_IDS = [
   ActionIds.RenderDashboard,
   ActionIds.LogFollowUp,
   ActionIds.ApplyCustomerChanges,
+  ActionIds.CreateCustomer,
 ] as const;
 export type CustomActionId = (typeof CUSTOM_ACTION_IDS)[number];
 
@@ -88,6 +90,33 @@ export const ApplyCustomerChangesPayload = z.object({
   reason: z.string().min(1).max(500),
 });
 
+/** A new BC customer as the app pre-fills it (lengths follow the BC customer API). */
+export const NewCustomerFields = z
+  .object({
+    number: z.string().regex(/^[A-Z0-9-]{1,20}$/),
+    name: z.string().min(1).max(100),
+    addressLine1: z.string().max(100).optional(),
+    city: z.string().max(30).optional(),
+    postalCode: z.string().max(20).optional(),
+    country: z.string().max(10).optional(),
+    phoneNumber: z.string().max(30).optional(),
+    email: z.string().email().max(80).optional(),
+    website: z.string().max(80).optional(),
+    taxRegistrationNumber: z.string().max(20).optional(),
+    currencyCode: z.string().max(10).optional(),
+    creditLimit: z.number().min(0).max(1_000_000_000).optional(),
+  })
+  .strict();
+export type NewCustomerFields = z.infer<typeof NewCustomerFields>;
+
+/** Agent proposes, the app opens a pre-filled new customer form, the user saves (which creates it in BC). */
+export const CreateCustomerPayload = z.object({
+  contractVersion: ContractVersionField,
+  customer: NewCustomerFields,
+  /** Where the data came from, e.g. "Email from Rita Sousa, 26 Nov". */
+  source: z.string().min(1).max(300),
+});
+
 export const OpenRecordPayload = z.object({ entity: LogicalName, recordId: RecordId });
 export const NavigateToViewPayload = z.object({ entity: LogicalName, fetchXml: FetchXml });
 
@@ -97,6 +126,7 @@ export const ActionPayloadSchemas = {
   [ActionIds.RenderDashboard]: RenderDashboardPayload,
   [ActionIds.LogFollowUp]: LogFollowUpPayload,
   [ActionIds.ApplyCustomerChanges]: ApplyCustomerChangesPayload,
+  [ActionIds.CreateCustomer]: CreateCustomerPayload,
   [ActionIds.OpenRecord]: OpenRecordPayload,
   [ActionIds.NavigateToView]: NavigateToViewPayload,
 } as const satisfies Record<ActionId, z.ZodType>;
@@ -107,6 +137,7 @@ export type ShowWorklistPayload = ActionPayload<typeof ActionIds.ShowWorklist>;
 export type RenderDashboardPayload = ActionPayload<typeof ActionIds.RenderDashboard>;
 export type LogFollowUpPayload = ActionPayload<typeof ActionIds.LogFollowUp>;
 export type ApplyCustomerChangesPayload = ActionPayload<typeof ActionIds.ApplyCustomerChanges>;
+export type CreateCustomerPayload = ActionPayload<typeof ActionIds.CreateCustomer>;
 export type OpenRecordPayload = ActionPayload<typeof ActionIds.OpenRecord>;
 export type NavigateToViewPayload = ActionPayload<typeof ActionIds.NavigateToView>;
 

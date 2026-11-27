@@ -56,6 +56,10 @@ export class FixtureDataService implements CollectionsDataService {
     return id;
   }
 
+  async companyOf(_customerNo: string): Promise<{ id: string; name: string } | undefined> {
+    return { id: "00000000-0000-0000-0000-00000000c0de", name: "CRONUS ES" };
+  }
+
   async listNotes(customerNo: string, top = 5): Promise<CustomerNote[]> {
     return this.actionLog
       .filter((e) => e.kind === "followUp" && e.customerNo === customerNo)

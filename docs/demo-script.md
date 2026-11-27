@@ -1,149 +1,194 @@
-# Demo script: three beats (about 12 minutes)
+# Demo guide: one morning in collections
 
-Live tenant: app **Collections Workspace** on `premium-us`, Business Central **CRONUS ES** (environment
-*Production*) through virtual tables, agent **Collections** set as the app's default agent.
+Live tenant: app **Collections Workspace** on `premium-us`, Business Central **CRONUS ES** (environment *Production*)
+through virtual tables, agent **Collections** set as the app's default agent. Session day: 27 Nov 2026.
 
-Hero customer: **Fabrikam, Inc. (DEMO-C-1001)**. With the demo date `DEMO_AS_OF=2026-11-27` (the session
-day) the live tenant shows:
+## The story
+
+**Ana** is a collections specialist at Contoso in Lisbon. It's the last week of November and month-end close is close.
+Her worst account is **Fabrikam, Inc.** One question runs through the demo: *what do I chase today, and what do I do about
+Fabrikam?* Each act answers it with one more piece of the bridge between the app and Copilot.
+
+| Act | Ana's question | What the audience learns | Time |
+|---|---|---|---|
+| 0 · The gap | "Copilot, what should I chase for this customer?" | AI next to the app doesn't know where you are | 1 min |
+| 1 · Context | She opens Fabrikam | The app and the pane know the record; one click hands over what the app knows | 2 min |
+| 2 · Action | "What do I chase today?" | The agent works on live ERP data and operates the app: ranked list, side panes | 3 min |
+| 3 · Shared UI | "How does the whole book look?" | One dashboard on two surfaces; a change in either place reaches the other | 4 min |
+| 4 · Research *(optional)* | "Before I call: what's the climate?" | The agent researches the web; the note lands on the record after she confirms | 2 min |
+| 5 · Decision *(optional)* | "Cut the credit limit and block shipments" | Copilot fills the form, Ana saves, Business Central changes | 2 min |
+| 6 · New customer *(optional)* | "Set up the customer from Rita's email" | Copilot finds the email, pre-fills a new customer form, Ana saves it into Business Central | 2 min |
+| Close | | Share, ask, act. The agent never writes to the ERP itself | 1 min |
+
+Core demo: acts 0–3, about 10 minutes. With acts 4 and 5: about 15.
+
+## Numbers you should see
+
+With the demo date `DEMO_AS_OF=2026-11-27`, the session day:
 
 | What | Value |
 |---|---|
-| Open balance | **€73,588.52** across 4 open invoices |
+| Fabrikam open balance | **€73,588.52** across 4 open invoices: 103304, 103306, 103307, 103308 |
 | Worst invoice | **103304, €48,499.99, 100 days overdue (90+)**, ranked #1, *Call today* |
 | Payment behaviour | **39.7 days late** on average (55.4 amount-weighted), **worsening** +3.8 days/month, 0 % on time, risk **85**/100, credit use 123 % |
-| Whole demo book (25 `DEMO-C-*` customers) | 300 invoices posted, 269 paid and closed, 31 open (€221,327.21) |
-| Aging dashboard (overdue on 27 Nov) | **€124,753.11** over six customers, Fabrikam first (€73,588.52); without 90+ **€76,253.12** |
+| Fabrikam credit limit | **€60,000**, not blocked (restore with `node deploy/demo-reset.mjs`) |
+| Demo book (25 `DEMO-C-*` customers) | 300 invoices posted, 269 paid and closed, 31 open (€221,327.21) |
+| Aging dashboard (overdue on 27 Nov) | **€124,753.11** over six customers, Fabrikam first; without 90+ **€76,253.12** |
 
-Other open Fabrikam invoices: 103306 (€8,604.52), 103307 (€9,628.45) and 103308 (posted 22 Nov).
-The beats don't depend on exact numbers, but these are what you should see on stage.
+The *Overdue invoices* sub-grid uses the real date. On 27 Nov the real date and the demo date are the same, so it matches
+the agent.
 
-The *Overdue invoices* view and its sub-grid use the **real** date (a view filter can't take a demo date).
-Only the agent's numbers and the PCF use `DEMO_AS_OF`. Before 27 Nov the sub-grid shows fewer overdue rows
-than the agent reports; on the day they match.
-
-Every beat below was run end to end in the tenant on 15 Nov 2026. Screenshots in `docs/img/` still come from the mock
-host (fixture numbers such as SI-104008).
+Verified in the tenant: acts 1–3 on 15 Nov; acts 4 and 5 on 26 Nov. **Not yet run with the current agent (1.0.9): act 0
+and act 6. Run both in the rehearsal.**
 
 ## Before you go on stage
 
-- [ ] Signed in as the demo user (M365 Copilot licence). Collections Workspace open on the sitemap, Copilot pane closed.
+- [ ] Signed in as the demo user (M365 Copilot licence).
 - [ ] Tenant switches still on (setup.md §7), above all Microsoft 365 admin center → Copilot → Settings →
-      *Business Applications data in Work IQ available to Copilot* = All users. If the header has no **Copilot** button,
-      run `await Xrm.Copilot.isM365CopilotEnabled()` in the console: `false` means a switch is off.
-- [ ] Open Fabrikam once in the last 30 minutes, so the `isM365CopilotEnabled()` cache is warm, and close it again.
-- [ ] MCP server healthy (it runs with min replicas 1, so no cold start):
+      *Business Applications data in Work IQ available to Copilot* = All users. If the app header has no **Copilot**
+      button, run `await Xrm.Copilot.isM365CopilotEnabled()` in the console: `false` means a switch is off.
+- [ ] MCP server healthy (min replicas 1, no cold start):
   ```bash
   curl -s "$(grep ^PUBLIC_BASE_URL deploy/outputs.env | cut -d= -f2)/healthz"
   ```
   Expect `"status":"ok"`, `"dataMode":"dataverse"`, `"authMode":"entra"`.
-- [ ] One rehearsal run of all three beats on the day, so SSO, the action consent (*Allow*) and the dashboard
-      *Confirm* (pick **Always allow** if offered) are already granted.
-- [ ] Old dashboards deleted in *Collection dashboards* (the agent's "the dashboard" means the latest one), so Beat 3 starts at v1.
-- [ ] After the rehearsal: `node deploy/demo-reset.mjs` (Fabrikam back to 60,000, not blocked; `--all` also clears dashboards and notes).
-- [ ] Side panes from the rehearsal closed.
-- [ ] A Microsoft 365 Copilot tab (m365.cloud.microsoft/chat) open on the **Collections** agent, new chat, for Beat 1.
-- [ ] The pane is open on **Collections**. Don't use **+** (new chat) on stage: a new chat starts on plain Copilot, without
-      the default agent. For a clean chat, close the pane (**X**) and reopen it with **Copilot** in the header.
-- [ ] Mock fallback running in a second browser tab: `npm run demo` → http://localhost:5173.
-- [ ] Recorded video of each beat on the desktop.
-- [ ] Notifications off, browser zoom 110–125 %, Copilot pane width so the widget shows the whole table.
+- [ ] One full rehearsal on the day (acts 0–5), so sign-in, the action consent (*Allow*) and the dashboard *Confirm*
+      (pick **Always allow** if offered) are already granted.
+- [ ] After the last rehearsal, reset: Fabrikam back to €60,000 and not blocked, dashboards and notes deleted:
+  ```bash
+  node deploy/demo-reset.mjs --all
+  ```
+- [ ] Browser tab 1: Microsoft 365 Copilot (m365.cloud.microsoft/chat), agent **Collections**, new chat (act 0).
+- [ ] Browser tab 2: Collections Workspace on the *Customers with balance* view, Copilot pane closed, no side panes.
+- [ ] Browser tab 3: the mock (`npm run demo` → http://localhost:5173), the full fallback.
+- [ ] Optional tab 4: Business Central, CRONUS ES, customer Fabrikam (DEMO-C-1001), to show act 5's result.
+- [ ] Backup recording of the live run on the desktop.
+- [ ] Notifications off, browser zoom 110–125 %, Copilot pane wide enough for the widget's table.
 
-## Beat 1: Outside the app, then inside (3 min)
+**In the app pane, don't use + (new chat):** it starts plain Copilot, without the default agent. For a clean chat, close
+the pane (**X**) and reopen it with **Copilot** in the header. The app's buttons always reach the agent anyway.
 
-**Say:** "AI used to live next to the app. Same agent, two places: first next to the app, then inside it."
+## Act 0 · The gap: AI next to the app (1 min)
 
-| Click / type | What the audience sees | Under the hood |
-|---|---|---|
-| Microsoft 365 Copilot (m365.cloud.microsoft/chat) → agent **Collections** → type *"Analyze this customer's payment behavior and tell me what to chase today."* | The agent asks which customer | Outside the app there is no open record and no app: the agent can't know |
-| Switch to the app: Sitemap **Customers** → view *Customers with balance* → **Fabrikam, Inc.** | Form *Collections customer* loads; the control shows **Copilot has context**, *Overdue €73,588.52*; the pane opens by itself on **Collections** | `isM365CopilotEnabled()` → `updateContext({...})` → `openM365CopilotPanel()` on the app's default agent |
-| Control → **Analyze payment behavior** | The prompt names **Fabrikam, Inc. (DEMO-C-1001)**; Beat 2 starts from here | `sendPromptToM365Copilot(prompt, { gptId })`: one click, the right agent, the right customer |
-
-**Say (what the platform gives, what the bridge adds):** "Inside the app, the pane already knows which record is
-open. What it doesn't pass to our agent is what the app knows on top: the customer number, the view and its filter,
-the totals. So the bridge puts that in the prompt, and then it lets the agent act on the app, which is the next beat."
-
-**If it fails:** if the agent outside the app guesses a customer, say "it's guessing, which is exactly the problem",
-and go to the app. If the pane doesn't open, click **Copilot** in the header; if it opens on plain Copilot, close and
-reopen it.
-
-## Beat 2: The agent operates the app (3 min)
-
-**Say:** "Now the app asks the agent, and the agent drives the app."
+**Say:** "This is how most of us use AI today: next to the app. Ana asks Copilot about her customer."
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
-| (from Beat 1) **Analyze payment behavior** with the switch on | The prompt *"Use the Collections tools to analyze the payment behavior of Fabrikam, Inc. (DEMO-C-1001) and prioritize what to chase today."* appears in the pane, sent by the app. The agent: 39.7 days late, worsening 3.8 days/month, risk 85 | `sendPromptToM365Copilot(prompt, { gptId })` with the customer named in the prompt (authored agents don't receive `updateContext`), gptId from the app's default-agent variable → `get_customer_context`, `analyze_payment_behavior`, `prioritize_collections` (2–6 s, live virtual tables) |
-| (no click) | The **priority-list widget** renders in the pane, 103304 at the top (*Call today*); the control switches to **Chase today** in rank order, with the same next steps as the widget | `prioritize_collections` → widget `postMessage({ eventName: 'powerapps.copilot.chat.action', action: 'Contoso.Collections.ShowWorklist' … })` → `addActionHandler` handler → ranked list in the control |
-| Widget → **Open 3 critical invoices** | Side panes open for 103304, 103306, 103307 on the *Collections invoice* form | `OpenInvoices` action → `Xrm.App.sidePanes.createPane` per invoice (opened on click, not automatically: they cover the page) |
-| Click the **103304** side pane | The €48,499.99 invoice, a normal BC sales invoice form over the virtual table | Side pane = record form, live from Business Central |
+| Tab 1 (Microsoft 365 Copilot, agent **Collections**): *"Analyze this customer's payment behavior and tell me what to chase today."* | The agent asks which customer | Outside the app there is no open record: the agent can't know, and its instructions forbid guessing |
 
-**Point at:** every number came from a tool call (the instructions forbid estimates). Every payload passed
-the contract's allow-list before anything opened (show `bridge/handlers.ts`).
+**Say:** "Same agent, same tools. It just doesn't know where Ana is. So let's bring it into the app."
 
-**If it fails:** if the agent answers from Work IQ (no widget, vague numbers), start a new chat and click the button again.
-If the control doesn't switch to **Chase today**, click **Show chase-today list** in the widget. If that fails too,
-switch to the mock tab and repeat the beat there ("same code, with the platform faked").
+**If it fails:** if it guesses a customer, say "it's guessing, which is exactly the problem" and move on.
 
-## Beat 3: Generative UI on two surfaces (5 min)
-
-**Say:** "Last one: the agent builds UI, and that UI lives in both places."
+## Act 1 · Context: one click hands over what the app knows (2 min)
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
-| Control → **Build aging dashboard** (or type *"Build me a dashboard of overdue by customer and aging bucket"*) | Copilot shows a **Confirm** card for the tool. Click **Confirm** | `build_aging_dashboard` writes the spec to Dataverse, so it isn't `readOnlyHint` and Copilot asks first. Say: "the platform asks before any tool that writes, and the ERP is never written" |
-| (no click) | Dashboard (stacked bars + matrix) renders **in the pane** and, a moment later, **inside the app**: both **€124,753.11**, six customers, Fabrikam first | Spec v1 in `ppn_collectiondashboard` → widget → `RenderDashboard` → the control renders the same `<AgingDashboard>`, scoped to `DEMO-C-*` like the server |
-| In the **app**, click the **90+** chip | App dashboard re-renders: Fabrikam drops to €25,088.53, total **€76,253.12**, header **v2 (app)**, and an **Ask Copilot** button appears. The widget still shows v1 | Spec v2 saved by the app (last write wins on the version) |
-| App → **Ask Copilot** (or type *"What does the dashboard show now?"*) | The agent reports the app's change, and the widget **re-renders at v2 (app)**: both surfaces match again | `get_dashboard()` without an id returns the latest dashboard; its widget replaces the stale one |
-| Optional: in the **widget**, toggle **61–90** | Widget and app both move to v3 | `update_dashboard` → `RenderDashboard` to the app |
+| Tab 2: **Customers** → *Customers with balance* → **Fabrikam, Inc.** | Form *Collections customer*. The control shows **Copilot has context** and *Overdue €73,588.52*; the pane opens by itself on **Collections** | `isM365CopilotEnabled()` → `updateContext({...})` → `openM365CopilotPanel()` on the app's default agent |
 
-**Say (sharp edge):** "The widget can't be pushed to. Copilot has no host-context-changed event, and the app's context
-doesn't reach our agent, so sync is pull: the agent re-reads the stored version, with last-write-wins on a version number."
+**Say:** "Inside the app, the pane knows which record is open. What it doesn't pass to our agent is what the app knows on
+top of that: the customer number, the view and its filter, the totals. So the app hands it over in the prompt, with one
+click." Then go straight to act 2 with that click.
 
-Don't use the **Current** chip: the dashboard measures overdue amounts, so that column is always empty and removing
-it changes nothing visible.
+**If it fails:** if the pane doesn't open, click **Copilot** in the header; if it opens on plain Copilot, close and reopen it.
 
-**If it fails:** if the dashboard doesn't appear in the app, click **Show in app** in the widget. If the agent
-answers about the old version, click **Ask Copilot** in the app (the prompt names the tools).
+## Act 2 · Action: the agent operates the app (3 min)
 
-## Bonus (if time): research online, then insert into the record (2 min)
-
-Run in the tenant on 26 Nov: the note appeared on the form with its sources. Skip it if web search misbehaves on the day.
+**Say:** "Ana's real question: what do I chase today?"
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
-| Control → **Research online** | The prompt asks for the payment and credit climate around Fabrikam, Inc. (DEMO-C-1001), based in Lisbon: late-payment trends, insolvencies, regulation, "don't search for the company itself" | `sendPromptToM365Copilot` with `gptId`; the agent has the WebSearch capability |
-| (no click) | The agent searches the web and shows a card: **Insert this research into the record?** with a short summary and source links | `propose_research_note` (writes nothing) |
-| Card → **Insert into record** → **Insert research** in the app's dialog | The **Notes** list on the form shows the note with its sources | `LogFollowUp` action (kind research) → confirm dialog → a `ppn_collectionaction` row. Nothing goes to Business Central |
+| Control → **Analyze payment behavior** | The pane shows the app's prompt: *"Use the Collections tools to analyze the payment behavior of Fabrikam, Inc. (DEMO-C-1001) and prioritize what to chase today."* The agent: 39.7 days late, worsening 3.8 days/month, risk 85 | `sendPromptToM365Copilot(prompt, { gptId })` → `get_customer_context`, `analyze_payment_behavior`, `prioritize_collections` on live BC data (2–6 s) |
+| (no click) | The **priority-list widget** in the pane, 103304 first (*Call today*). The control switches to **Chase today** with the same next steps | Widget → `ShowWorklist` action → the control's handler, after the contract's allow-list |
+| Widget → **Open 3 critical invoices** | Side panes open for 103304, 103306, 103307 on the *Collections invoice* form | `OpenInvoices` → `Xrm.App.sidePanes.createPane`; on click, because panes cover the page |
+| Click the **103304** pane | €48,499.99, due 19 Aug, live from Business Central, read-only | Record form over the virtual table |
 
-**Say:** "The agent researches, the app writes, and only after I confirm. Web facts are context; the numbers still come
-from the tools." Demo customers are fictional, so the research is about the country and sector, not the company.
+**Say:** "Every number came from a tool, on live ERP data. And the agent didn't just answer: it changed what's on Ana's
+screen, through actions the app allows and audits."
 
-## Bonus 3 (if time): Copilot fills the form, you save to Business Central (2 min)
+**If it fails:** if the agent answers vaguely with no widget, it answered from Work IQ: close and reopen the pane, click
+**Analyze** again. If the control doesn't switch to **Chase today**, click **Show chase-today list** in the widget.
 
-Run in the tenant on 26 Nov: the fields filled in, saved, and Business Central showed the change. After each run, `node deploy/demo-reset.mjs` puts Fabrikam back.
+## Act 3 · Shared UI: one dashboard, two surfaces (4 min)
+
+**Say:** "Her manager wants the big picture before the close."
 
 | Click / type | What the audience sees | Under the hood |
 |---|---|---|
-| After Beat 2, type: **"Fabrikam is high risk: reduce the credit limit to 40,000 and block shipments"** | A card: **Change Fabrikam, Inc. in Business Central?** Credit limit €60,000 → **€40,000**, Blocked → **Ship**, with the reason | `propose_customer_update` (writes nothing) |
-| Card → **Apply to the form** | On the form, **Credit Limit** shows 40,000 and **Blocked** shows Ship, unsaved; the control says "Review and Save to update Business Central" | `ApplyCustomerChanges` (allow-list: 2 fields, open customer only) → bound properties → `getOutputs` |
-| Form → **Save** | Saved. Optional: open Fabrikam in Business Central: credit limit 40,000, Blocked = Ship | Dataverse virtual table → Business Central API, as the signed-in user |
+| Control → **Build aging dashboard** | Copilot shows **Confirm** for the tool; click it | `build_aging_dashboard` saves a spec to Dataverse, so Copilot asks first |
+| (no click) | The same dashboard **in the pane** and, a moment later, **inside the app**: **€124,753.11**, six customers, Fabrikam first | Spec v1 → widget → `RenderDashboard` → the control renders the same component |
+| In the **app**, click the **90+** chip | The app's dashboard: Fabrikam €25,088.53, total **€76,253.12**, header **v2 (app)**, and an **Ask Copilot** button. The widget still shows v1 | The app saves v2 (last write wins on the version) |
+| App → **Ask Copilot** | The agent reports the app's change and the widget re-renders at **v2 (app)**: both match again | `get_dashboard()` returns the latest version |
 
-**Say:** "The agent never writes to the ERP. It proposes, the app fills the form, and I save, with Business Central's own
-validation and my own permissions."
+**Say (sharp edge):** "Copilot can't push into a widget, and our agent doesn't get the app's own context. So sync is
+pull: the agent re-reads the stored version, last write wins."
 
-## Bonus 2 (if time): propose a follow-up, then confirm (1 min)
+Don't use the **Current** chip: the dashboard measures overdue amounts, so that column is always empty.
 
-Not yet run in the tenant: rehearse it before using it on stage.
+**If it fails:** if the dashboard doesn't appear in the app, click **Show in app** in the widget.
 
+## Act 4 · Research before the call (optional, 2 min)
 
-Type: **"Log a follow-up: Fabrikam promised to pay 103304 by 2026-12-04"** → the agent calls
-`propose_follow_up` (writes nothing) → card in the pane → **Log in app** → the app shows the confirm
-dialog *Log follow-up proposed by Copilot?* → **Log follow-up** → a `ppn_collectionaction` row.
-"The agent never writes to the ERP, and nothing is written without a human click, in the app."
+**Say:** "Before Ana calls Fabrikam, she wants context: how is the market treating late payers?"
 
-Fallback if the widget route fails: the same action via Adaptive Card `Action.Submit` with
-`{ type: "PowerApps", action: "Contoso.Collections.LogFollowUp", actionData }`
-(`createAdaptiveCardSubmitData` in the contract).
+| Click / type | What the audience sees | Under the hood |
+|---|---|---|
+| Control → **Research online** | The prompt asks for the payment and credit climate around Fabrikam, based in Lisbon: late-payment trends, insolvencies, regulation; "don't search for the company itself" | The agent has Microsoft's WebSearch capability (20–60 s) |
+| (no click) | A card: **Insert this research into the record?** with a short summary and source links | `propose_research_note` writes nothing |
+| Card → **Insert into record** → **Insert research** | The **Notes** list on the form shows the note and its sources | `LogFollowUp` (kind research) → confirm dialog → Dataverse; nothing goes to Business Central |
+
+**Say:** "The agent researches, the app writes, and only after Ana confirms. Web facts are context; the numbers still come
+from the tools." (Demo customers are fictional, so the research is about the country and sector.)
+
+## Act 5 · The decision: Copilot fills the form, Ana saves to Business Central (optional, 2 min)
+
+**Say:** "Ana decides: Fabrikam is over its limit and getting worse."
+
+| Click / type | What the audience sees | Under the hood |
+|---|---|---|
+| Type in the pane: *"Fabrikam is high risk: reduce the credit limit to 40,000 and block shipments"* | A card: **Change Fabrikam, Inc. in Business Central?** €60,000 → **€40,000**, Blocked → **Ship**, with the reason | `propose_customer_update` writes nothing |
+| Card → **Apply to the form** | On the form, **Credit Limit** 40,000 and **Blocked** Ship, unsaved; the control says "Review and Save to update Business Central" | `ApplyCustomerChanges` (2 fields, open customer only) → bound properties → `getOutputs` |
+| Form → **Save** | Saved. Optional: tab 4, refresh Fabrikam in Business Central: 40,000, Blocked = Ship | Virtual table → Business Central API, as Ana |
+
+**Say:** "The agent never writes to the ERP. It proposes, the app fills the form, Ana saves, with Business Central's own
+validation and her own permissions."
+
+After the session or rehearsal: `node deploy/demo-reset.mjs`.
+
+## Act 6 · A new customer from an email (optional, 2 min)
+
+**Not yet run in the tenant: rehearse it.** Before the session, send yourself the email below from another mailbox (or
+from your own), so the agent can find it.
+
+> **Subject:** New account – Bairro Alto Foods, Lda
+>
+> Hello, we'd like to open an account with Contoso. Our details:
+> Bairro Alto Foods, Lda · Rua da Rosa 12, 1200-385 Lisboa, Portugal · NIF PT509123456
+> Phone +351 213 456 789 · rita.sousa@bairroaltofoods.example · www.bairroaltofoods.example
+> Best regards, Rita Sousa, Finance
+
+**Say:** "One more thing lands in Ana's inbox: a new customer wants an account."
+
+| Click / type | What the audience sees | Under the hood |
+|---|---|---|
+| Type in the pane: *"Set up Bairro Alto Foods as a new customer from Rita Sousa's email"* | The agent finds the email and shows a card: **Create Bairro Alto Foods, Lda in Business Central?** with No. **DEMO-C-1026**, address, city, country, phone, email, website, VAT number, and "From: Email from Rita Sousa…" | Mailbox search (the agent's Email capability) → `propose_new_customer`: only values from the email, next free number, duplicate check; writes nothing |
+| Card → **Create on the form** | A **New customer** form opens as a dialog over Fabrikam, pre-filled, company CRONUS ES | `CreateCustomer` → `Xrm.Navigation.navigateTo` (dialog) with the values |
+| Dialog → **Save & Close** | The control says "Created Bairro Alto Foods, Lda (DEMO-C-1026) in Business Central". Optional: tab 4, Business Central customers | Virtual table → Business Central API, as Ana |
+
+**Say:** "From an email to an ERP customer in one click, and still nothing is written until Ana saves."
+
+Fallback: paste the email text into the pane instead of asking the agent to find it. After the session or rehearsal:
+`node deploy/demo-reset.mjs --all` deletes the rehearsal customer in Business Central.
+
+## Close (1 min)
+
+**Say:** "Three verbs. The app **shares** where you are, **asks** the agent with one click, and the agent **acts** on the
+app through actions the app allows. Every write is a human click. That's the bridge."
+
+## Extra (if asked): log a promise to pay
+
+Type *"Log a follow-up: Fabrikam promised to pay 103304 by 2026-12-04"* → card → **Log in app** → confirm dialog →
+**Log follow-up**: the note appears in **Notes** on the form. Not run on its own, but it uses the same path as act 4.
 
 ## Full fallback: the mock (no tenant, no network)
 
@@ -155,18 +200,15 @@ npm install
 npm run demo
 ```
 
-- `npm run demo` builds the widgets and starts http://localhost:5173.
-- Left: a fake model-driven app running the **real** PCF bridge and components. Right: a fake Copilot
-  pane running the **real** MCP server and tools in the page, and the **real** widget HTML in iframes.
-  It uses the fixture data (Fabrikam C-1001, SI-104008), not the tenant.
-- The four chips under the pane are the beats' prompts. **Analyze payment behavior** in the control is
-  Beat 2 exactly as on stage.
-- *Bridge events* at the bottom lists each `updateContext`, prompt, action, side pane and audit row, which helps when narrating.
-- The **M365 Copilot enabled** switch shows graceful degradation.
-- `?mcp=http` uses a separately running server instead (`npm run demo:http`).
-- Rehearsal check: `npm run smoke -w mock` (Playwright) drives all beats and saves screenshots.
+- Starts http://localhost:5173: a fake model-driven app running the **real** control code, and a fake Copilot pane
+  running the **real** MCP server, tools and widgets. It uses fixture data (Fabrikam C-1001, SI-104008), not the tenant.
+- Covers acts 1–3 and the promise-to-pay follow-up. It doesn't cover act 0, act 4 (web research) or act 5 (saving to
+  Business Central).
+- *Bridge events* at the bottom lists each context update, prompt, action, side pane and audit row.
+- `npm run smoke -w mock` (Playwright) drives the beats and saves screenshots.
 
 ## After the session
 
-- Set `DEMO_AS_OF=` (empty, keep the line so `azure.sh` overwrites the old value) in `deploy/tenant.env`, then rerun `bash deploy/azure.sh` and `node deploy/bind-pcf.mjs`
-  so both the server and the control use the real date again.
+- `node deploy/demo-reset.mjs --all`.
+- Set `DEMO_AS_OF=` (empty, keep the line) in `deploy/tenant.env`, then rerun `bash deploy/azure.sh` and
+  `node deploy/bind-pcf.mjs`, so the server and the control use the real date again.

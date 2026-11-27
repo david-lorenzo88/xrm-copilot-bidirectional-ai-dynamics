@@ -20,6 +20,8 @@ export interface CollectionsDataService {
   /** Last write wins on spec.version; returns what is stored afterwards. */
   saveDashboard(spec: DashboardSpec): Promise<DashboardSpec>;
   createFollowUp(payload: LogFollowUpPayload): Promise<string>;
+  /** The BC company of a customer (to pre-fill a new customer in the same company). */
+  companyOf(customerNo: string): Promise<{ id: string; name: string } | undefined>;
   /** Confirmed follow-ups and research notes for a customer, newest first. */
   listNotes(customerNo: string, top?: number): Promise<CustomerNote[]>;
   audit(entry: AuditEntry): Promise<void>;
@@ -126,6 +128,13 @@ export class WebApiDataService implements CollectionsDataService {
       [c.outcome]: "confirmed",
     });
     return res.id;
+  }
+
+  async companyOf(customerNo: string): Promise<{ id: string; name: string } | undefined> {
+    const res = await this.webApi.retrieveMultipleRecords(CUS.logicalName, `?$select=_dyn365bc_companylookup_id_value,dyn365bc_companylookup_code&$filter=${CUS.columns.number} eq ${odata(customerNo)}&$top=1`);
+    const r = res.entities[0];
+    const id = r?._dyn365bc_companylookup_id_value;
+    return id ? { id: String(id), name: String(r.dyn365bc_companylookup_code ?? "") } : undefined;
   }
 
   async listNotes(customerNo: string, top = 5): Promise<CustomerNote[]> {

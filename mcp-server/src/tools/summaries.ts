@@ -1,5 +1,5 @@
 import type { PaymentBehavior } from "@collections/domain";
-import type { CustomerUpdateProposal, DashboardResult, FollowUpProposal, PrioritizeResult, getCustomerContext } from "./handlers";
+import type { CustomerUpdateProposal, DashboardResult, NewCustomerProposal, FollowUpProposal, PrioritizeResult, getCustomerContext } from "./handlers";
 
 /** Short, number-rich text for the model. The widget uses structuredContent instead. */
 
@@ -55,6 +55,12 @@ export function summarizeCustomerUpdate(p: CustomerUpdateProposal): string {
   if (c.creditLimit !== undefined) parts.push(`credit limit ${money(p.customer.creditLimit, p.customer.currency)} → ${money(c.creditLimit, p.customer.currency)}`);
   if (c.blocked !== undefined) parts.push(`Blocked → ${c.blocked || "not blocked"}`);
   return `Proposed change for ${p.customer.name} (${p.customer.number}): ${parts.join(", ")}. Reason: ${p.payload.reason}. Nothing is changed yet: the user applies it to the open form from the card, reviews it and saves; saving writes to Business Central.`;
+}
+
+export function summarizeNewCustomer(p: NewCustomerProposal): string {
+  const c = p.payload.customer;
+  const filled = Object.entries(c).filter(([k, v]) => v !== undefined && k !== "name" && k !== "number").map(([k]) => k);
+  return `Proposed new customer ${c.name} as ${c.number} (from: ${p.payload.source}); fields: ${filled.join(", ") || "name only"}. Nothing is created yet: the user opens it on a pre-filled form from the card, reviews it and saves; saving creates it in Business Central.`;
 }
 
 export function summarizeFollowUp(p: FollowUpProposal): string {

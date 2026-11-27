@@ -9,7 +9,7 @@ import {
   type ParsedAction,
 } from "@collections/contract";
 import { BC_TABLES, ageInvoices, buildOverdueInvoicesFetchXml, formatIsoDate, round2, type DashboardData, type WorklistItem } from "@collections/domain";
-import { computeDashboard, confirmAndLogFollowUp, loadWorklist, navigateToWorklistView, openInvoicesInSidePanes, resolveDashboard } from "./actions";
+import { computeDashboard, confirmAndLogFollowUp, loadWorklist, navigateToWorklistView, openInvoicesInSidePanes, openNewCustomerForm, resolveDashboard } from "./actions";
 import { askCopilot, createContextPublisher } from "./context";
 import type { CollectionsDataService, CustomerNote } from "./data";
 import { registerActionHandlers } from "./handlers";
@@ -30,6 +30,8 @@ export interface BridgeSettings {
   dashboardPrompt: string;
   /** Optional saved view to switch the grid to on ShowWorklist. */
   worklistViewId?: string;
+  /** The "New customer" main form (editable BC fields) opened for CreateCustomer; bound by bind-pcf.mjs. */
+  newCustomerFormId?: string;
   /** Demo: show the "Share context with Copilot" switch (before/after for the bridge). */
   showContextSwitch?: boolean;
 }
@@ -187,6 +189,15 @@ export function createCollectionsBridge(deps: BridgeDeps): CollectionsBridge {
         const what = action.data.kind === "research" ? "Research note" : "Follow-up";
         if (id) await loadNotes();
         return notify(id ? { intent: "success", text: `${what} saved to this record` } : { intent: "info", text: `${what} not saved` });
+      }
+      case ActionIds.CreateCustomer: {
+        if (!deps.navigation) throw new Error("Navigation not available");
+        const open = store.get().record?.customerNo;
+        const company = open ? await data.companyOf(open).catch(() => undefined) : undefined;
+        const c = action.data.customer;
+        notify({ intent: "info", text: `Opened a new customer form filled in by Copilot: review it and Save to create ${c.name} in Business Central.` });
+        const saved = await openNewCustomerForm(deps.navigation, action.data, { formId: settings.newCustomerFormId, company });
+        return notify(saved ? { intent: "success", text: `Created ${c.name} (${c.number}) in Business Central` } : { intent: "info", text: `${c.name} not created` });
       }
       case ActionIds.ApplyCustomerChanges: {
         const open = store.get().record?.customerNo;
