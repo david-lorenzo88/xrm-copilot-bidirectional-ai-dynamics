@@ -17,6 +17,7 @@ Fabrikam?* Each act answers it with one more piece of the bridge between the app
 | 3 · Shared UI | "How does the whole book look?" | One dashboard on two surfaces; a change in either place reaches the other | 4 min |
 | 4 · Research *(optional)* | "Before I call: what's the climate?" | The agent researches the web; the note lands on the record after she confirms | 2 min |
 | 5 · Decision *(optional)* | "Cut the credit limit and block shipments" | Copilot fills the form, Ana saves, Business Central changes | 2 min |
+| 6 · New customer *(optional)* | "Set up the customer from Rita's email" | Copilot finds the email, pre-fills a new customer form, Ana saves it into Business Central | 2 min |
 | Close | | Share, ask, act. The agent never writes to the ERP itself | 1 min |
 
 Core demo: acts 0–3, about 10 minutes. With acts 4 and 5: about 15.
@@ -37,8 +38,8 @@ With the demo date `DEMO_AS_OF=2026-11-27`, the session day:
 The *Overdue invoices* sub-grid uses the real date. On 27 Nov the real date and the demo date are the same, so it matches
 the agent.
 
-Verified in the tenant: acts 1–3 on 15 Nov; acts 4 and 5 on 26 Nov. **Act 0 not yet run with the current agent (1.0.8):
-run it in the rehearsal.**
+Verified in the tenant: acts 1–3 on 15 Nov; acts 4 and 5 on 26 Nov. **Not yet run with the current agent (1.0.9): act 0
+and act 6. Run both in the rehearsal.**
 
 ## Before you go on stage
 
@@ -153,6 +154,31 @@ from the tools." (Demo customers are fictional, so the research is about the cou
 validation and her own permissions."
 
 After the session or rehearsal: `node deploy/demo-reset.mjs`.
+
+## Act 6 · A new customer from an email (optional, 2 min)
+
+**Not yet run in the tenant: rehearse it.** Before the session, send yourself the email below from another mailbox (or
+from your own), so the agent can find it.
+
+> **Subject:** New account – Bairro Alto Foods, Lda
+>
+> Hello, we'd like to open an account with Contoso. Our details:
+> Bairro Alto Foods, Lda · Rua da Rosa 12, 1200-385 Lisboa, Portugal · NIF PT509123456
+> Phone +351 213 456 789 · rita.sousa@bairroaltofoods.example · www.bairroaltofoods.example
+> Best regards, Rita Sousa, Finance
+
+**Say:** "One more thing lands in Ana's inbox: a new customer wants an account."
+
+| Click / type | What the audience sees | Under the hood |
+|---|---|---|
+| Type in the pane: *"Set up Bairro Alto Foods as a new customer from Rita Sousa's email"* | The agent finds the email and shows a card: **Create Bairro Alto Foods, Lda in Business Central?** with No. **DEMO-C-1026**, address, city, country, phone, email, website, VAT number, and "From: Email from Rita Sousa…" | Mailbox search (the agent's Email capability) → `propose_new_customer`: only values from the email, next free number, duplicate check; writes nothing |
+| Card → **Create on the form** | A **New customer** form opens as a dialog over Fabrikam, pre-filled, company CRONUS ES | `CreateCustomer` → `Xrm.Navigation.navigateTo` (dialog) with the values |
+| Dialog → **Save & Close** | The control says "Created Bairro Alto Foods, Lda (DEMO-C-1026) in Business Central". Optional: tab 4, Business Central customers | Virtual table → Business Central API, as Ana |
+
+**Say:** "From an email to an ERP customer in one click, and still nothing is written until Ana saves."
+
+Fallback: paste the email text into the pane instead of asking the agent to find it. After the session or rehearsal:
+`node deploy/demo-reset.mjs --all` deletes the rehearsal customer in Business Central.
 
 ## Close (1 min)
 

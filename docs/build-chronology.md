@@ -214,6 +214,9 @@ flowchart LR
     Central through the virtual table. Blocked added to the form, both fields unlocked by `bind-pcf.mjs`;
     `deploy/demo-reset.mjs` restores Fabrikam. PCF 1.0.12, agent 1.0.8, 119 tests. Verified in the tenant: saved and
     visible in Business Central.
+44. **New customer from an email**: the agent searches the mailbox (Email capability), `propose_new_customer` checks
+    for duplicates and picks the next `DEMO-C-` number, and the control opens a pre-filled **New customer** form as a
+    dialog; saving creates the customer in Business Central. PCF 1.0.13, agent 1.0.9, 123 tests.
 
 ## Still open
 
