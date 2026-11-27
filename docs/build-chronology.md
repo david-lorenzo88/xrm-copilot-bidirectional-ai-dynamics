@@ -9,6 +9,10 @@ repository or by Microsoft's model-apps `app-builder` skill, so the same path ca
 
 ![Architecture](img/architecture.png)
 
+Full solution as of 27 Nov 2026, all features (Eraser, editable: https://app.eraser.io/workspace/N0WH9KJX2TTgnBhna1DV):
+
+![Architecture, full solution](img/architecture-eraser.png)
+
 ```mermaid
 flowchart LR
   user([Collections specialist])
